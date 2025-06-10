@@ -4,17 +4,6 @@ import { Doc, Id } from "./_generated/dataModel";
 export type User = Doc<"users">;
 export type UserId = Id<"users">;
 
-export type UserSubscriptionTier = "free" | "basic" | "pro" | "enterprise";
-
-// Feature types for subscription plans
-export type SubscriptionFeature =
-  | "basic_generation"
-  | "high_quality"
-  | "batch_processing"
-  | "api_access"
-  | "priority_support"
-  | "all";
-
 export type CreateUserArgs = {
   email: string;
   name: string;
@@ -50,28 +39,34 @@ export type CreateGenerationArgs = {
   parameters: GenerationParameters;
 };
 
-// Subscription types
-export type Subscription = Doc<"subscriptions">;
-export type SubscriptionId = Id<"subscriptions">;
+// Token purchase types
+export type TokenPurchase = Doc<"tokenPurchases">;
+export type TokenPurchaseId = Id<"tokenPurchases">;
 
-export type SubscriptionPlanType = "free" | "basic" | "pro" | "enterprise";
-export type SubscriptionStatus =
-  | "active"
-  | "cancelled"
-  | "past_due"
-  | "unpaid"
-  | "incomplete";
-export type SubscriptionInterval = "month" | "year";
+export type TokenPurchaseStatus =
+  | "pending"
+  | "completed"
+  | "failed"
+  | "refunded";
 
-export type CreateSubscriptionArgs = {
+export type CreateTokenPurchaseArgs = {
   userId: UserId;
-  planType: SubscriptionPlanType;
-  stripeSubscriptionId?: string;
-  stripeCustomerId?: string;
-  stripePriceId?: string;
-  amount?: number;
-  currency?: string;
-  interval?: SubscriptionInterval;
+  amount: number; // Amount in cents
+  tokensReceived: number;
+  packageName: string;
+  packageDisplayName: string;
+  paymentMethod?: string;
+  stripePaymentIntentId?: string;
+};
+
+// Token package definitions
+export type TokenPackage = {
+  name: string;
+  displayName: string;
+  tokens: number;
+  price: number; // in cents
+  popular?: boolean;
+  savings?: string;
 };
 
 // Usage types
@@ -84,15 +79,14 @@ export type UserAction =
   | "generation_failed"
   | "image_uploaded"
   | "image_downloaded"
-  | "subscription_created"
-  | "subscription_updated"
-  | "subscription_cancelled"
+  | "tokens_purchased"
   | "login"
   | "logout";
 
 export type UsageMetadata = {
   generationId?: GenerationId;
-  subscriptionId?: SubscriptionId;
+  tokenPurchaseId?: TokenPurchaseId;
+  tokensUsed?: number;
   errorMessage?: string;
   processingTime?: number;
   modelUsed?: string;
@@ -152,23 +146,23 @@ export type GenerationMetrics = {
   avgProcessingTime: number;
 };
 
-export type SubscriptionUsage = {
-  planType: SubscriptionPlanType;
-  generationsUsed: number;
-  generationsLimit: number;
-  remainingGenerations: number;
-  usagePercentage: number;
-  status: SubscriptionStatus;
+export type TokenUsageStats = {
+  tokenBalance: number;
+  totalTokensPurchased: number;
+  totalTokensUsed: number;
+  freeTokensGranted: number;
+  recentPurchases: TokenPurchase[];
+  usageThisMonth: number;
 };
 
 export type DashboardStats = {
   user: {
     name: string;
     email: string;
-    subscriptionTier: UserSubscriptionTier;
+    tokenBalance: number;
     memberSince: number;
   };
-  subscription: SubscriptionUsage | null;
+  tokenStats: TokenUsageStats;
   generationStats: GenerationStats;
   activityStats: {
     totalActions: number;
@@ -179,12 +173,11 @@ export type DashboardStats = {
 
 export type SystemStats = {
   totalUsers: number;
-  subscriptionStats: {
-    total: number;
-    free: number;
-    basic: number;
-    pro: number;
-    enterprise: number;
+  tokenStats: {
+    totalTokensSold: number;
+    totalTokensUsed: number;
+    activeUsersWithTokens: number;
+    avgTokensPerUser: number;
   };
   generationStats: {
     total24h: number;

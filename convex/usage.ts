@@ -11,16 +11,15 @@ export const logUserAction = mutation({
       v.literal("generation_failed"),
       v.literal("image_uploaded"),
       v.literal("image_downloaded"),
-      v.literal("subscription_created"),
-      v.literal("subscription_updated"),
-      v.literal("subscription_cancelled"),
+      v.literal("tokens_purchased"),
       v.literal("login"),
       v.literal("logout")
     ),
     metadata: v.optional(
       v.object({
         generationId: v.optional(v.id("generations")),
-        subscriptionId: v.optional(v.id("subscriptions")),
+        tokenPurchaseId: v.optional(v.id("tokenPurchases")),
+        tokensUsed: v.optional(v.number()),
         errorMessage: v.optional(v.string()),
         processingTime: v.optional(v.number()),
         modelUsed: v.optional(v.string()),
@@ -57,9 +56,7 @@ export const getUserUsageHistory = query({
         v.literal("generation_failed"),
         v.literal("image_uploaded"),
         v.literal("image_downloaded"),
-        v.literal("subscription_created"),
-        v.literal("subscription_updated"),
-        v.literal("subscription_cancelled"),
+        v.literal("tokens_purchased"),
         v.literal("login"),
         v.literal("logout")
       )

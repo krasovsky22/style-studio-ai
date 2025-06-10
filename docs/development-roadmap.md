@@ -170,7 +170,6 @@
   - [x] ✅ Files table for image storage
 - [x] ✅ Set up Convex authentication
 - [x] ✅ Create basic database queries and mutations
-- [x] ✅ Implement real-time subscriptions for generation status
 
 #### 2. NextAuth.js Integration ✅ COMPLETED
 

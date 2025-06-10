@@ -13,7 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Zap, Image as ImageIcon, TrendingUp, Coins } from "lucide-react";
 import Link from "next/link";
@@ -42,12 +41,6 @@ export default function DashboardPage() {
 
   const tokenBalance = 0; // TODO: Implement token balance from user data
   const totalGenerations = stats?.totalGenerations || 0;
-  const planType = stats?.subscription?.planType || "free";
-
-  // Calculate generation usage from stats
-  const generationsLimit = stats?.subscription?.generationsLimit || 50;
-  const generationsUsed = stats?.subscription?.generationsUsed || 0;
-  const remainingGenerations = Math.max(0, generationsLimit - generationsUsed);
 
   return (
     <AppLayout showSidebar>
@@ -59,19 +52,6 @@ export default function DashboardPage() {
               Welcome to Style Studio AI. Manage your generations and account
               settings.
             </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge
-              variant={planType === "free" ? "secondary" : "default"}
-              className="capitalize"
-            >
-              {planType} Plan
-            </Badge>
-            {planType === "free" && (
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/pricing">Upgrade</Link>
-              </Button>
-            )}
           </div>
         </div>
 
@@ -118,48 +98,6 @@ export default function DashboardPage() {
             icon={<Zap className="h-4 w-4" />}
           />
         </div>
-
-        {/* Usage Progress */}
-        {planType !== "enterprise" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Monthly Usage</CardTitle>
-              <CardDescription>
-                Track your generation usage for this month
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Generations Used</span>
-                  <span>
-                    {generationsUsed} / {generationsLimit}
-                  </span>
-                </div>
-                <div className="bg-secondary h-2 w-full rounded-full">
-                  <div
-                    className="bg-primary h-2 rounded-full transition-all duration-300"
-                    style={{
-                      width: `${Math.min(100, (generationsUsed / generationsLimit) * 100)}%`,
-                    }}
-                  />
-                </div>
-                {remainingGenerations <= 2 && remainingGenerations > 0 && (
-                  <p className="text-sm text-amber-600 dark:text-amber-400">
-                    You&apos;re running low on generations. Consider upgrading
-                    your plan.
-                  </p>
-                )}
-                {remainingGenerations === 0 && (
-                  <p className="text-destructive text-sm">
-                    You&apos;ve reached your monthly limit. Upgrade to continue
-                    generating.
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Recent Generations */}
         <Card>

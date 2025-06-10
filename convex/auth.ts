@@ -44,22 +44,18 @@ export async function getCurrentUserOrThrow(ctx: QueryCtx | MutationCtx) {
 }
 
 /**
- * Check if the current user has the required subscription tier
+ * Check if the current user has sufficient tokens
  */
-export async function requireSubscriptionTier(
+export async function requireTokens(
   ctx: QueryCtx | MutationCtx,
-  requiredTier: "free" | "basic" | "pro" | "enterprise"
+  tokensRequired: number = 1
 ) {
   const user = await getCurrentUserOrThrow(ctx);
 
-  const tierHierarchy = ["free", "basic", "pro", "enterprise"];
-  const userTierIndex = tierHierarchy.indexOf(user.subscriptionTier);
-  const requiredTierIndex = tierHierarchy.indexOf(requiredTier);
-
-  if (userTierIndex < requiredTierIndex) {
+  if (user.tokenBalance < tokensRequired) {
     throw createError(
-      `This feature requires a ${requiredTier} subscription or higher`,
-      "INSUFFICIENT_SUBSCRIPTION"
+      `Insufficient tokens. Required: ${tokensRequired}, Available: ${user.tokenBalance}`,
+      "INSUFFICIENT_TOKENS"
     );
   }
 
@@ -81,43 +77,39 @@ export async function checkUserPermission(
 
   switch (action) {
     case "create_generation":
-      // Check if user has remaining generations
-      const subscription = await ctx.db
-        .query("subscriptions")
-        .withIndex("by_user", (q) => q.eq("userId", user._id))
-        .filter((q) => q.eq(q.field("status"), "active"))
-        .first();
-
-      if (!subscription) {
-        throw createError("No active subscription found", "NO_SUBSCRIPTION");
-      }
-
-      if (subscription.generationsUsed >= subscription.generationsLimit) {
-        throw createError("Generation limit exceeded", "LIMIT_EXCEEDED");
+      // Check if user has sufficient tokens
+      if (user.tokenBalance < 1) {
+        throw createError(
+          "Insufficient tokens for generation",
+          "INSUFFICIENT_TOKENS"
+        );
       }
       break;
 
     case "batch_processing":
-      if (!["pro", "enterprise"].includes(user.subscriptionTier)) {
+      // Require at least 10 tokens for batch processing
+      if (user.tokenBalance < 10) {
         throw createError(
-          "Batch processing requires Pro or Enterprise subscription",
-          "INSUFFICIENT_SUBSCRIPTION"
+          "Batch processing requires at least 10 tokens",
+          "INSUFFICIENT_TOKENS"
         );
       }
       break;
 
     case "api_access":
-      if (!["pro", "enterprise"].includes(user.subscriptionTier)) {
+      // Require at least 1 token for API access
+      if (user.tokenBalance < 1) {
         throw createError(
-          "API access requires Pro or Enterprise subscription",
-          "INSUFFICIENT_SUBSCRIPTION"
+          "API access requires at least 1 token",
+          "INSUFFICIENT_TOKENS"
         );
       }
       break;
 
     case "admin_access":
       // In a real app, you'd have admin role checking here
-      if (user.subscriptionTier !== "enterprise") {
+      // For now, we'll check if user has made significant token purchases
+      if (user.totalTokensPurchased < 1000) {
         throw createError("Admin access denied", "ACCESS_DENIED");
       }
       break;
@@ -190,21 +182,10 @@ export async function createOrUpdateUserFromAuth(ctx: MutationCtx) {
       provider: identity.issuer,
       createdAt: now,
       lastLoginAt: now,
-      subscriptionTier: "free",
-      usageCount: 0,
-      resetDate: now + 30 * 24 * 60 * 60 * 1000, // 30 days from now
-    });
-
-    // Create initial free subscription
-    await ctx.db.insert("subscriptions", {
-      userId,
-      planType: "free",
-      status: "active",
-      startDate: now,
-      generationsLimit: 5,
-      generationsUsed: 0,
-      createdAt: now,
-      updatedAt: now,
+      tokenBalance: 5, // Give new users 5 free tokens
+      totalTokensPurchased: 0,
+      totalTokensUsed: 0,
+      freeTokensGranted: 5,
     });
 
     // Log user creation and login
@@ -223,8 +204,8 @@ export async function createOrUpdateUserFromAuth(ctx: MutationCtx) {
  */
 export async function checkResourceOwnership(
   ctx: QueryCtx | MutationCtx,
-  resourceType: "generation" | "file" | "subscription",
-  resourceId: Id<"generations"> | Id<"files"> | Id<"subscriptions">
+  resourceType: "generation" | "file" | "tokenPurchase",
+  resourceId: Id<"generations"> | Id<"files"> | Id<"tokenPurchases">
 ) {
   const user = await getCurrentUserOrThrow(ctx);
 
@@ -242,8 +223,8 @@ export async function checkResourceOwnership(
         throw createError("Access denied", "ACCESS_DENIED");
       }
       break;
-    case "subscription":
-      resource = await ctx.db.get(resourceId as Id<"subscriptions">);
+    case "tokenPurchase":
+      resource = await ctx.db.get(resourceId as Id<"tokenPurchases">);
       if (resource && "userId" in resource && resource.userId !== user._id) {
         throw createError("Access denied", "ACCESS_DENIED");
       }
@@ -287,33 +268,42 @@ export async function checkRateLimit(
 }
 
 /**
- * Get user's current subscription with usage info
+ * Get user's current token info with usage stats
  */
-export async function getUserSubscriptionInfo(ctx: QueryCtx | MutationCtx) {
+export async function getUserTokenInfo(ctx: QueryCtx | MutationCtx) {
   const user = await getCurrentUserOrThrow(ctx);
 
-  const subscription = await ctx.db
-    .query("subscriptions")
+  // Get recent token purchases
+  const recentPurchases = await ctx.db
+    .query("tokenPurchases")
     .withIndex("by_user", (q) => q.eq("userId", user._id))
-    .filter((q) => q.eq(q.field("status"), "active"))
-    .first();
+    .order("desc")
+    .take(5);
 
-  if (!subscription) {
-    throw createError("No active subscription found", "NO_SUBSCRIPTION");
-  }
+  // Get recent generations for usage tracking
+  const recentGenerations = await ctx.db
+    .query("generations")
+    .withIndex("by_user", (q) => q.eq("userId", user._id))
+    .order("desc")
+    .take(10);
 
-  const usagePercentage =
-    (subscription.generationsUsed / subscription.generationsLimit) * 100;
-  const remainingGenerations =
-    subscription.generationsLimit - subscription.generationsUsed;
+  const totalTokensSpent = recentGenerations.reduce(
+    (sum, gen) => sum + gen.tokensUsed,
+    0
+  );
 
   return {
-    subscription,
-    usage: {
-      used: subscription.generationsUsed,
-      limit: subscription.generationsLimit,
-      remaining: remainingGenerations,
-      percentage: Math.round(usagePercentage),
+    tokenBalance: user.tokenBalance,
+    totalTokensPurchased: user.totalTokensPurchased,
+    totalTokensUsed: user.totalTokensUsed,
+    freeTokensGranted: user.freeTokensGranted,
+    recentPurchases,
+    recentGenerations,
+    stats: {
+      availableTokens: user.tokenBalance,
+      recentUsage: totalTokensSpent,
+      totalLifetimePurchased: user.totalTokensPurchased,
+      totalLifetimeUsed: user.totalTokensUsed,
     },
   };
 }

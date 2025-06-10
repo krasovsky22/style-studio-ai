@@ -10,21 +10,19 @@ export default defineSchema({
     emailVerified: v.optional(v.number()), // Date timestamp
     createdAt: v.number(),
     lastLoginAt: v.number(),
-    subscriptionTier: v.union(
-      v.literal("free"),
-      v.literal("basic"),
-      v.literal("pro"),
-      v.literal("enterprise")
-    ),
-    usageCount: v.number(),
-    resetDate: v.number(),
+
+    // Token system fields
+    tokenBalance: v.number(),
+    totalTokensPurchased: v.number(),
+    totalTokensUsed: v.number(),
+    freeTokensGranted: v.number(),
+
     // Auth provider fields
     externalId: v.optional(v.string()), // For OAuth providers
     provider: v.optional(v.string()), // "google", "github", etc.
   })
     .index("by_email", ["email"])
-    .index("by_external_id", ["externalId"])
-    .index("by_subscription_tier", ["subscriptionTier"]),
+    .index("by_external_id", ["externalId"]),
 
   // Generations table for AI image generations
   generations: defineTable({
@@ -56,6 +54,7 @@ export default defineSchema({
 
     // Processing info
     processingTime: v.optional(v.number()), // in milliseconds
+    tokensUsed: v.number(), // Number of tokens consumed for this generation
     error: v.optional(v.string()),
     retryCount: v.number(),
 
@@ -69,48 +68,6 @@ export default defineSchema({
     .index("by_user_and_status", ["userId", "status"])
     .index("by_user_and_created_at", ["userId", "createdAt"]),
 
-  // Subscriptions table for user plans
-  subscriptions: defineTable({
-    userId: v.id("users"),
-    planType: v.union(
-      v.literal("free"),
-      v.literal("basic"),
-      v.literal("pro"),
-      v.literal("enterprise")
-    ),
-    status: v.union(
-      v.literal("active"),
-      v.literal("cancelled"),
-      v.literal("past_due"),
-      v.literal("unpaid"),
-      v.literal("incomplete")
-    ),
-    startDate: v.number(),
-    endDate: v.optional(v.number()),
-
-    // Stripe integration
-    stripeSubscriptionId: v.optional(v.string()),
-    stripeCustomerId: v.optional(v.string()),
-    stripePriceId: v.optional(v.string()),
-
-    // Usage limits
-    generationsLimit: v.number(),
-    generationsUsed: v.number(),
-
-    // Billing
-    amount: v.optional(v.number()), // in cents
-    currency: v.optional(v.string()),
-    interval: v.optional(v.union(v.literal("month"), v.literal("year"))),
-
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_user", ["userId"])
-    .index("by_stripe_subscription_id", ["stripeSubscriptionId"])
-    .index("by_stripe_customer_id", ["stripeCustomerId"])
-    .index("by_status", ["status"])
-    .index("by_plan_type", ["planType"]),
-
   // Usage tracking table for analytics
   usage: defineTable({
     userId: v.id("users"),
@@ -120,9 +77,7 @@ export default defineSchema({
       v.literal("generation_failed"),
       v.literal("image_uploaded"),
       v.literal("image_downloaded"),
-      v.literal("subscription_created"),
-      v.literal("subscription_updated"),
-      v.literal("subscription_cancelled"),
+      v.literal("tokens_purchased"),
       v.literal("login"),
       v.literal("logout")
     ),
@@ -132,12 +87,15 @@ export default defineSchema({
     metadata: v.optional(
       v.object({
         generationId: v.optional(v.id("generations")),
-        subscriptionId: v.optional(v.id("subscriptions")),
+        tokenPurchaseId: v.optional(v.id("tokenPurchases")),
+        tokensUsed: v.optional(v.number()),
+        tokensReceived: v.optional(v.number()),
         errorMessage: v.optional(v.string()),
         processingTime: v.optional(v.number()),
         modelUsed: v.optional(v.string()),
         imageSize: v.optional(v.string()),
         userAgent: v.optional(v.string()),
+        reason: v.optional(v.string()),
       })
     ),
 
@@ -183,4 +141,38 @@ export default defineSchema({
     .index("by_category", ["category"])
     .index("by_storage_id", ["storageId"])
     .index("by_uploaded_at", ["uploadedAt"]),
+
+  // Token purchases table for payment tracking
+  tokenPurchases: defineTable({
+    userId: v.id("users"),
+    amount: v.number(), // Amount paid in cents (Stripe format)
+    tokensReceived: v.number(), // Number of tokens purchased
+    status: v.union(
+      v.literal("pending"),
+      v.literal("completed"),
+      v.literal("failed"),
+      v.literal("refunded")
+    ),
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+
+    // Payment processing
+    stripePaymentIntentId: v.optional(v.string()),
+    transactionId: v.string(), // Internal transaction ID
+    paymentMethod: v.optional(v.string()), // "card", "paypal", etc.
+
+    // Package information
+    packageName: v.string(), // "starter", "standard", "pro", "enterprise"
+    packageDisplayName: v.string(), // "Starter Pack", "Standard Pack", etc.
+
+    // Error handling
+    error: v.optional(v.string()),
+    refundReason: v.optional(v.string()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"])
+    .index("by_created_at", ["createdAt"])
+    .index("by_stripe_payment_intent", ["stripePaymentIntentId"])
+    .index("by_transaction_id", ["transactionId"])
+    .index("by_user_and_status", ["userId", "status"]),
 });

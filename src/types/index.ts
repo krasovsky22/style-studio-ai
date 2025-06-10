@@ -7,9 +7,10 @@ export interface User {
   profileImage?: string;
   createdAt: Date;
   lastLoginAt?: Date;
-  subscriptionTier: SubscriptionTier;
-  usageCount: number;
-  resetDate: Date;
+  tokenBalance: number;
+  totalTokensPurchased: number;
+  totalTokensUsed: number;
+  freeTokensGranted: number;
 }
 
 export interface Generation {
@@ -17,26 +18,33 @@ export interface Generation {
   userId: string;
   status: GenerationStatus;
   createdAt: Date;
+  completedAt?: Date;
   productImageUrl: string;
   modelImageUrl?: string;
   resultImageUrl?: string;
   prompt?: string;
   parameters: GenerationParameters;
   processingTime?: number;
+  tokensUsed: number;
   error?: string;
   retryCount: number;
 }
 
-export interface Subscription {
+export interface TokenPurchase {
   id: string;
   userId: string;
-  planType: SubscriptionTier;
-  status: SubscriptionStatus;
-  startDate: Date;
-  endDate?: Date;
-  stripeSubscriptionId?: string;
-  generationsLimit: number;
-  generationsUsed: number;
+  amount: number; // Amount paid in cents
+  tokensReceived: number;
+  status: TokenPurchaseStatus;
+  createdAt: Date;
+  completedAt?: Date;
+  stripePaymentIntentId?: string;
+  transactionId: string;
+  paymentMethod?: string;
+  packageName: string;
+  packageDisplayName: string;
+  error?: string;
+  refundReason?: string;
 }
 
 export interface Usage {
@@ -46,22 +54,35 @@ export interface Usage {
   timestamp: Date;
   metadata?: Record<string, unknown>;
   ipAddress?: string;
+  sessionId?: string;
 }
 
-export type SubscriptionTier = "free" | "basic" | "pro" | "enterprise";
 export type GenerationStatus =
   | "pending"
   | "processing"
   | "completed"
-  | "failed";
-export type SubscriptionStatus =
-  | "active"
-  | "inactive"
-  | "cancelled"
-  | "past_due";
+  | "failed"
+  | "cancelled";
+
+export type TokenPurchaseStatus =
+  | "pending"
+  | "completed"
+  | "failed"
+  | "refunded";
 
 export interface GenerationParameters {
-  style: "realistic" | "artistic" | "minimal";
-  quality: "standard" | "high";
-  size: "512x512" | "768x768" | "1024x1024";
+  model: string;
+  style?: string;
+  quality?: string;
+  aspectRatio?: string;
+  seed?: number;
+}
+
+export interface TokenPackage {
+  name: string;
+  displayName: string;
+  tokens: number;
+  price: number; // in cents
+  popular?: boolean;
+  savings?: string;
 }

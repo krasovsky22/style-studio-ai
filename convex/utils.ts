@@ -1,115 +1,17 @@
 import { ConvexError } from "convex/values";
-import { UserSubscriptionTier, SubscriptionFeature } from "./types";
-
-// Subscription tier configurations
-export const SUBSCRIPTION_LIMITS: Record<
-  UserSubscriptionTier,
-  {
-    generationsLimit: number;
-    maxFileSize: number;
-    maxStorageSize: number;
-    features: SubscriptionFeature[];
-  }
-> = {
-  free: {
-    generationsLimit: 5,
-    maxFileSize: 5 * 1024 * 1024, // 5MB
-    maxStorageSize: 50 * 1024 * 1024, // 50MB
-    features: ["basic_generation"],
-  },
-  basic: {
-    generationsLimit: 50,
-    maxFileSize: 10 * 1024 * 1024, // 10MB
-    maxStorageSize: 500 * 1024 * 1024, // 500MB
-    features: ["basic_generation", "high_quality", "priority_support"],
-  },
-  pro: {
-    generationsLimit: 200,
-    maxFileSize: 20 * 1024 * 1024, // 20MB
-    maxStorageSize: 2 * 1024 * 1024 * 1024, // 2GB
-    features: [
-      "basic_generation",
-      "high_quality",
-      "batch_processing",
-      "api_access",
-      "priority_support",
-    ],
-  },
-  enterprise: {
-    generationsLimit: 10000, // Effectively unlimited
-    maxFileSize: 100 * 1024 * 1024, // 100MB
-    maxStorageSize: 10 * 1024 * 1024 * 1024, // 10GB
-    features: ["all"],
-  },
-} as const;
-
-// Pricing information (in cents)
-export const SUBSCRIPTION_PRICING = {
-  basic: {
-    monthly: 999, // $9.99
-    yearly: 9999, // $99.99 (2 months free)
-  },
-  pro: {
-    monthly: 2999, // $29.99
-    yearly: 29999, // $299.99 (2 months free)
-  },
-  enterprise: {
-    monthly: 9999, // $99.99
-    yearly: 99999, // $999.99 (2 months free)
-  },
-} as const;
-
-// Helper functions
-
-/**
- * Get subscription limits for a given tier
- */
-export function getSubscriptionLimits(tier: UserSubscriptionTier) {
-  return SUBSCRIPTION_LIMITS[tier];
-}
 
 /**
  * Check if a user can perform an action based on their subscription
  */
-export function canPerformAction(
-  action: string,
-  tier: UserSubscriptionTier,
-  usageCount: number = 0
-): boolean {
-  const limits = getSubscriptionLimits(tier);
-
-  switch (action) {
-    case "create_generation":
-      return usageCount < limits.generationsLimit;
-    case "batch_processing":
-      return (
-        limits.features.includes("batch_processing") ||
-        limits.features.includes("all")
-      );
-    case "api_access":
-      return (
-        limits.features.includes("api_access") ||
-        limits.features.includes("all")
-      );
-    case "high_quality":
-      return (
-        limits.features.includes("high_quality") ||
-        limits.features.includes("all")
-      );
-    default:
-      return true;
-  }
+export function canPerformAction(): boolean {
+  return true;
 }
 
 /**
  * Validate file size against subscription limits
  */
-export function validateFileSize(
-  fileSize: number,
-  tier: UserSubscriptionTier
-): boolean {
-  const limits = getSubscriptionLimits(tier);
-  return fileSize <= limits.maxFileSize;
+export function validateFileSize(): boolean {
+  return true;
 }
 
 /**

@@ -20,19 +20,16 @@ export const createGeneration = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    // Check user's subscription and usage limits
-    const subscription = await ctx.db
-      .query("subscriptions")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .filter((q) => q.eq(q.field("status"), "active"))
-      .first();
-
-    if (!subscription) {
-      throw new Error("No active subscription found");
+    // Check user's token balance
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
     }
 
-    if (subscription.generationsUsed >= subscription.generationsLimit) {
-      throw new Error("Generation limit exceeded for current subscription");
+    if (user.tokenBalance < 1) {
+      throw new Error(
+        "Insufficient tokens. Please purchase more tokens to continue."
+      );
     }
 
     const generationId = await ctx.db.insert("generations", {
@@ -43,22 +40,9 @@ export const createGeneration = mutation({
       modelImageUrl: args.modelImageUrl,
       prompt: args.prompt,
       parameters: args.parameters,
+      tokensUsed: 0, // Will be set to 1 when generation completes successfully
       retryCount: 0,
     });
-
-    // Update subscription usage
-    await ctx.db.patch(subscription._id, {
-      generationsUsed: subscription.generationsUsed + 1,
-      updatedAt: now,
-    });
-
-    // Update user usage count
-    const user = await ctx.db.get(args.userId);
-    if (user) {
-      await ctx.db.patch(args.userId, {
-        usageCount: user.usageCount + 1,
-      });
-    }
 
     // Log generation start
     await ctx.db.insert("usage", {
@@ -124,6 +108,28 @@ export const updateGenerationStatus = mutation({
 
     await ctx.db.patch(args.generationId, updates);
 
+    // Handle token usage based on generation result
+    const user = await ctx.db.get(generation.userId);
+    if (user) {
+      if (args.status === "completed") {
+        // Deduct 1 token for successful generation
+        await ctx.db.patch(generation.userId, {
+          tokenBalance: Math.max(0, user.tokenBalance - 1),
+          totalTokensUsed: user.totalTokensUsed + 1,
+        });
+
+        // Update generation with tokens used
+        await ctx.db.patch(args.generationId, {
+          tokensUsed: 1,
+        });
+      } else if (args.status === "failed") {
+        // Don't deduct tokens for failed generations
+        await ctx.db.patch(args.generationId, {
+          tokensUsed: 0,
+        });
+      }
+    }
+
     // Log completion or failure
     const action =
       args.status === "completed"
@@ -135,6 +141,7 @@ export const updateGenerationStatus = mutation({
       timestamp: now,
       metadata: {
         generationId: args.generationId,
+        tokensUsed: args.status === "completed" ? 1 : 0,
         processingTime: updates.processingTime,
         errorMessage: args.error,
       },

@@ -114,12 +114,6 @@ export const ERROR_MESSAGES = {
     processingFailed: "Generation processing failed",
     maxRetriesExceeded: "Maximum retry attempts exceeded",
   },
-  subscription: {
-    notFound: "Subscription not found",
-    alreadyExists: "Active subscription already exists",
-    paymentFailed: "Payment processing failed",
-    invalidPlan: "Invalid subscription plan",
-  },
   file: {
     notFound: "File not found",
     tooLarge: "File size exceeds the limit",
@@ -146,13 +140,6 @@ export const SUCCESS_MESSAGES = {
     completed: "Generation completed successfully",
     cancelled: "Generation cancelled successfully",
     retried: "Generation retry initiated",
-  },
-  subscription: {
-    created: "Subscription created successfully",
-    updated: "Subscription updated successfully",
-    cancelled: "Subscription cancelled successfully",
-    upgraded: "Subscription upgraded successfully",
-    downgraded: "Subscription downgraded successfully",
   },
   file: {
     uploaded: "File uploaded successfully",
@@ -182,14 +169,6 @@ export const EMAIL_TEMPLATES = {
     subject: "Welcome to Style Studio AI!",
     template: "welcome",
   },
-  subscriptionCreated: {
-    subject: "Subscription Activated",
-    template: "subscription-created",
-  },
-  subscriptionCancelled: {
-    subject: "Subscription Cancelled",
-    template: "subscription-cancelled",
-  },
   generationCompleted: {
     subject: "Your generation is ready!",
     template: "generation-completed",
@@ -203,9 +182,6 @@ export const EMAIL_TEMPLATES = {
 // Webhook events
 export const WEBHOOK_EVENTS = {
   stripe: {
-    subscriptionCreated: "customer.subscription.created",
-    subscriptionUpdated: "customer.subscription.updated",
-    subscriptionDeleted: "customer.subscription.deleted",
     invoicePaymentSucceeded: "invoice.payment_succeeded",
     invoicePaymentFailed: "invoice.payment_failed",
   },
@@ -220,7 +196,6 @@ export const WEBHOOK_EVENTS = {
 // Cache durations (in milliseconds)
 export const CACHE_DURATIONS = {
   user: 5 * 60 * 1000, // 5 minutes
-  subscription: 10 * 60 * 1000, // 10 minutes
   generation: 30 * 1000, // 30 seconds
   analytics: 60 * 60 * 1000, // 1 hour
 } as const;

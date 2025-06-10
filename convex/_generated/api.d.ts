@@ -18,7 +18,6 @@ import type * as constants from "../constants.js";
 import type * as files from "../files.js";
 import type * as generations from "../generations.js";
 import type * as realtime from "../realtime.js";
-import type * as subscriptions from "../subscriptions.js";
 import type * as types from "../types.js";
 import type * as usage from "../usage.js";
 import type * as users from "../users.js";
@@ -38,7 +37,6 @@ declare const fullApi: ApiFromModules<{
   files: typeof files;
   generations: typeof generations;
   realtime: typeof realtime;
-  subscriptions: typeof subscriptions;
   types: typeof types;
   usage: typeof usage;
   users: typeof users;

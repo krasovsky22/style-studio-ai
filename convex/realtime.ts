@@ -45,34 +45,6 @@ export const subscribeToProcessingGenerations = query({
   },
 });
 
-// Real-time subscription for user's active subscription
-export const subscribeToUserSubscription = query({
-  args: { userId: v.id("users") },
-  handler: async (ctx, args) => {
-    const subscription = await ctx.db
-      .query("subscriptions")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .filter((q) => q.eq(q.field("status"), "active"))
-      .first();
-
-    if (!subscription) {
-      return null;
-    }
-
-    // Calculate usage percentage and remaining time
-    const usagePercentage =
-      (subscription.generationsUsed / subscription.generationsLimit) * 100;
-    const remainingGenerations =
-      subscription.generationsLimit - subscription.generationsUsed;
-
-    return {
-      ...subscription,
-      usagePercentage: Math.round(usagePercentage),
-      remainingGenerations,
-    };
-  },
-});
-
 // Real-time subscription for user's recent activity
 export const subscribeToUserActivity = query({
   args: {
@@ -99,13 +71,6 @@ export const subscribeToDashboardStats = query({
     if (!user) {
       return null;
     }
-
-    // Get active subscription
-    const subscription = await ctx.db
-      .query("subscriptions")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .filter((q) => q.eq(q.field("status"), "active"))
-      .first();
 
     // Get generation statistics
     const allGenerations = await ctx.db
@@ -145,22 +110,8 @@ export const subscribeToDashboardStats = query({
       user: {
         name: user.name,
         email: user.email,
-        subscriptionTier: user.subscriptionTier,
         memberSince: user.createdAt,
       },
-      subscription: subscription
-        ? {
-            planType: subscription.planType,
-            generationsUsed: subscription.generationsUsed,
-            generationsLimit: subscription.generationsLimit,
-            usagePercentage: Math.round(
-              (subscription.generationsUsed / subscription.generationsLimit) *
-                100
-            ),
-            remainingGenerations:
-              subscription.generationsLimit - subscription.generationsUsed,
-          }
-        : null,
       generationStats,
       activityStats,
     };
@@ -174,21 +125,6 @@ export const subscribeToSystemStats = query({
     // Get total users
     const allUsers = await ctx.db.query("users").collect();
     const totalUsers = allUsers.length;
-
-    // Get active subscriptions
-    const activeSubscriptions = await ctx.db
-      .query("subscriptions")
-      .filter((q) => q.eq(q.field("status"), "active"))
-      .collect();
-
-    const subscriptionStats = {
-      total: activeSubscriptions.length,
-      free: activeSubscriptions.filter((s) => s.planType === "free").length,
-      basic: activeSubscriptions.filter((s) => s.planType === "basic").length,
-      pro: activeSubscriptions.filter((s) => s.planType === "pro").length,
-      enterprise: activeSubscriptions.filter((s) => s.planType === "enterprise")
-        .length,
-    };
 
     // Get recent generations (last 24 hours)
     const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
@@ -217,7 +153,6 @@ export const subscribeToSystemStats = query({
 
     return {
       totalUsers,
-      subscriptionStats,
       generationStats,
       lastUpdated: Date.now(),
     };
