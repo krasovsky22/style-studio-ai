@@ -43,10 +43,10 @@ export function UserMenu() {
     return (
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/auth/signin">Sign In</Link>
+          <Link href="/signin">Sign In</Link>
         </Button>
         <Button size="sm" asChild>
-          <Link href="/auth/signup">Sign Up</Link>
+          <Link href="/signup">Sign Up</Link>
         </Button>
       </div>
     );

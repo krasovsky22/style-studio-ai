@@ -7,7 +7,7 @@ import { Sparkles } from "lucide-react";
 
 export function Header() {
   return (
-    <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full border-b px-3 backdrop-blur">
+    <header className="sticky top-0 z-50 w-full px-3 text-white backdrop-blur">
       <div className="flex h-14 items-center">
         <div className="mr-4 hidden md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
@@ -17,23 +17,11 @@ export function Header() {
             </span>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
-            <Link
-              href="/generate"
-              className="hover:text-foreground/80 text-foreground/60 transition-colors"
-            >
+            <Link href="/generate" className="transition-colors">
               Generate
             </Link>
-            <Link
-              href="/dashboard"
-              className="hover:text-foreground/80 text-foreground/60 transition-colors"
-            >
+            <Link href="/dashboard" className="transition-colors">
               Dashboard
-            </Link>
-            <Link
-              href="/pricing"
-              className="hover:text-foreground/80 text-foreground/60 transition-colors"
-            >
-              Pricing
             </Link>
           </nav>
         </div>

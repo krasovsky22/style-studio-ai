@@ -2,119 +2,269 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Header } from "@/components/layout/header";
 import { useAuth } from "@/hooks/use-auth";
 import {
   ArrowRight,
   Sparkles,
   Image as ImageIcon,
-  Zap,
-  Users,
+  Video,
+  Star,
+  RefreshCw,
 } from "lucide-react";
+import React from "react";
 
 export default function Home() {
   const { isAuthenticated, isLoading } = useAuth();
 
   return (
-    <div className="bg-background min-h-screen">
+    <React.Fragment>
       <Header />
-      <main className="container mx-auto px-4 py-16 sm:py-24">
-        {/* Hero Section */}
-        <div className="mx-auto max-w-3xl space-y-8 text-center">
-          <div className="text-primary flex items-center justify-center space-x-2">
-            <Sparkles className="h-8 w-8" />
-            <span className="text-lg font-semibold">Style Studio AI</span>
-          </div>
 
-          <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-            AI-Powered{" "}
-            <span className="text-primary">Fashion Visualization</span> for
-            Everyone
-          </h1>
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20" />
+        <div className="container mx-auto px-4 py-24 sm:py-32">
+          <div className="mx-auto max-w-4xl text-center">
+            <div className="mb-8 flex items-center justify-center space-x-2">
+              <Sparkles className="h-8 w-8 text-purple-400" />
+              <span className="text-lg font-semibold text-purple-400">
+                Style Studio AI
+              </span>
+            </div>
 
-          <p className="text-muted-foreground mx-auto max-w-2xl text-xl">
-            Transform your fashion ideas into stunning visuals with cutting-edge
-            AI technology. Perfect for designers, retailers, and fashion
-            enthusiasts.
-          </p>
+            <h1 className="mb-8 text-5xl font-bold tracking-tight text-white sm:text-7xl">
+              Generate Stunning
+              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                {" "}
+                Fashion Art
+              </span>
+            </h1>
 
-          <div className="flex flex-col justify-center gap-4 sm:flex-row">
-            {!isAuthenticated && !isLoading ? (
-              <>
-                <Button asChild size="lg" className="sm:px-8">
-                  <Link href="/signup">
-                    Get Started Free
-                    <ArrowRight className="ml-2 h-4 w-4" />
+            <p className="mx-auto mb-12 max-w-3xl text-xl text-gray-300">
+              Unleash Your Boundless Creativity with Advanced AI Technology -
+              Generate Unique, High-Quality Fashion Images in Seconds.
+            </p>
+
+            <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-center">
+              {!isAuthenticated && !isLoading ? (
+                <>
+                  <Button
+                    asChild
+                    size="lg"
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 text-lg font-semibold hover:from-purple-700 hover:to-pink-700"
+                  >
+                    <Link href="/signup">
+                      Generate
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    asChild
+                    className="border-purple-400 px-8 py-4 text-lg text-purple-400 hover:bg-purple-400/10"
+                  >
+                    <Link href="/signin">Sign In</Link>
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 text-lg font-semibold hover:from-purple-700 hover:to-pink-700"
+                >
+                  <Link href="/dashboard">
+                    Go to Dashboard
+                    <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
-                <Button variant="outline" size="lg" asChild className="sm:px-8">
-                  <Link href="/signin">Sign In</Link>
+              )}
+            </div>
+
+            <div className="mt-16 flex items-center justify-center space-x-2 text-yellow-400">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="h-5 w-5 fill-current" />
+              ))}
+              <span className="ml-2 text-white">5000+ True Rating</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-24">
+        <div className="container mx-auto px-4">
+          <div className="mb-16 text-center">
+            <h2 className="mb-4 text-4xl font-bold text-white">
+              Mesmerising Features
+            </h2>
+            <p className="mx-auto max-w-2xl text-xl text-gray-300">
+              Explore the powerful features designed to bring your creative
+              visions to life effortlessly.
+            </p>
+          </div>
+
+          <div className="grid gap-8 lg:grid-cols-3">
+            {/* Text to Image */}
+            <Card className="border-purple-500/20 bg-slate-800/50 backdrop-blur-sm">
+              <CardContent className="p-8">
+                <div className="mb-6 h-48 overflow-hidden rounded-lg bg-gradient-to-br from-purple-600/20 to-pink-600/20">
+                  <div className="flex h-full items-center justify-center">
+                    <ImageIcon className="h-16 w-16 text-purple-400" />
+                  </div>
+                </div>
+                <h3 className="mb-4 text-2xl font-bold text-white">
+                  Text to Image Generator
+                </h3>
+                <p className="mb-6 text-gray-300">
+                  Produce impressive graphics from basic textual portrayals.
+                  Construct exclusive, superior-standard illustrations
+                  customized to your creative thought.
+                </p>
+                <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                  Try now
                 </Button>
-              </>
-            ) : (
-              <Button asChild size="lg" className="sm:px-8">
-                <Link href="/dashboard">
-                  Go to Dashboard
-                  <ArrowRight className="ml-2 h-4 w-4" />
+              </CardContent>
+            </Card>
+
+            {/* Image to Video */}
+            <Card className="border-purple-500/20 bg-slate-800/50 backdrop-blur-sm">
+              <CardContent className="p-8">
+                <div className="mb-6 h-48 overflow-hidden rounded-lg bg-gradient-to-br from-blue-600/20 to-purple-600/20">
+                  <div className="flex h-full items-center justify-center">
+                    <Video className="h-16 w-16 text-blue-400" />
+                  </div>
+                </div>
+                <h3 className="mb-4 text-2xl font-bold text-white">
+                  Image to Video
+                </h3>
+                <p className="mb-6 text-gray-300">
+                  Transform static images into dynamic, animated videos. Bring
+                  your visuals to life with seamless motion and effects.
+                </p>
+                <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                  Make Video
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Character Swapper */}
+            <Card className="border-purple-500/20 bg-slate-800/50 backdrop-blur-sm">
+              <CardContent className="p-8">
+                <div className="mb-6 h-48 overflow-hidden rounded-lg bg-gradient-to-br from-pink-600/20 to-red-600/20">
+                  <div className="flex h-full items-center justify-center">
+                    <RefreshCw className="h-16 w-16 text-pink-400" />
+                  </div>
+                </div>
+                <h3 className="mb-4 text-2xl font-bold text-white">
+                  Character Swapper
+                </h3>
+                <p className="mb-6 text-gray-300">
+                  Replace and customize characters in images. Easy swapping for
+                  endless creative possibilities with AI precision.
+                </p>
+                <Button className="w-full bg-pink-600 hover:bg-pink-700">
+                  Swap Character
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-24">
+        <div className="container mx-auto px-4">
+          <div className="mb-16 text-center">
+            <h2 className="mb-4 text-4xl font-bold text-white">
+              User Feedback
+            </h2>
+            <p className="mx-auto max-w-2xl text-xl text-gray-300">
+              Hear from our amazing users and discover how Style Studio AI has
+              transformed their creative journeys.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                name: "John D.",
+                role: "Designer",
+                text: "Effortless image creation with stunning results. Highly recommend this app to bring their creative ideas to life.",
+              },
+              {
+                name: "Sophia L.",
+                role: "Media Manager",
+                text: "Easy to use and perfect for generating unique visuals for social media. Saves time and boosts creativity.",
+              },
+              {
+                name: "Mike T.",
+                role: "Content Creator",
+                text: "The character swapper is a game changer so much fun and incredibly accurate. It adds a whole new level to.",
+              },
+              {
+                name: "Emily R.",
+                role: "Digital Artist",
+                text: "Seamless experience on mobile. Quick, powerful, and easy to navigate. Ideal for on-the-go creators!",
+              },
+            ].map((testimonial, index) => (
+              <Card
+                key={index}
+                className="border-purple-500/20 bg-slate-800/50 backdrop-blur-sm"
+              >
+                <CardContent className="p-6">
+                  <div className="mb-4 flex">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className="h-4 w-4 fill-yellow-400 text-yellow-400"
+                      />
+                    ))}
+                  </div>
+                  <p className="mb-4 text-gray-300">{testimonial.text}</p>
+                  <div>
+                    <p className="font-semibold text-white">
+                      {testimonial.name}
+                    </p>
+                    <p className="text-sm text-purple-400">
+                      {testimonial.role}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-24">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-4xl text-center">
+            <h2 className="mb-6 text-5xl font-bold text-white">
+              Unleash Imagination
+            </h2>
+            <p className="mb-8 text-xl text-gray-300">
+              Transform your ideas into stunning visuals effortlessly. Your
+              creative journey starts here!
+            </p>
+            {!isAuthenticated && !isLoading && (
+              <Button
+                asChild
+                size="lg"
+                className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 text-lg font-semibold hover:from-purple-700 hover:to-pink-700"
+              >
+                <Link href="/signup">
+                  Launch App
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
             )}
           </div>
         </div>
-
-        {/* Features Grid */}
-        <div className="mt-24 grid grid-cols-1 gap-8 md:grid-cols-3">
-          <div className="space-y-4 text-center">
-            <div className="bg-primary/10 mx-auto flex h-12 w-12 items-center justify-center rounded-lg">
-              <ImageIcon className="text-primary h-6 w-6" />
-            </div>
-            <h3 className="text-xl font-semibold">AI Generation</h3>
-            <p className="text-muted-foreground">
-              Upload your product images and let AI create stunning fashion
-              visualizations
-            </p>
-          </div>
-
-          <div className="space-y-4 text-center">
-            <div className="bg-primary/10 mx-auto flex h-12 w-12 items-center justify-center rounded-lg">
-              <Zap className="text-primary h-6 w-6" />
-            </div>
-            <h3 className="text-xl font-semibold">Lightning Fast</h3>
-            <p className="text-muted-foreground">
-              Get professional-quality results in seconds, not hours
-            </p>
-          </div>
-
-          <div className="space-y-4 text-center">
-            <div className="bg-primary/10 mx-auto flex h-12 w-12 items-center justify-center rounded-lg">
-              <Users className="text-primary h-6 w-6" />
-            </div>
-            <h3 className="text-xl font-semibold">Team Collaboration</h3>
-            <p className="text-muted-foreground">
-              Share and collaborate on fashion designs with your team
-            </p>
-          </div>
-        </div>
-
-        {/* CTA Section */}
-        <div className="bg-muted/50 mt-24 space-y-8 rounded-lg p-12 text-center">
-          <h2 className="text-3xl font-bold">
-            Ready to Transform Your Fashion Ideas?
-          </h2>
-          <p className="text-muted-foreground mx-auto max-w-2xl">
-            Join thousands of designers and retailers who are already using
-            Style Studio AI to create amazing fashion visualizations.
-          </p>
-          {!isAuthenticated && !isLoading && (
-            <Button asChild size="lg">
-              <Link href="/auth/signup">
-                Start Creating Today
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          )}
-        </div>
-      </main>
-    </div>
+      </section>
+    </React.Fragment>
   );
 }

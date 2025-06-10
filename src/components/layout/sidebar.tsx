@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { useUserStats } from "@/hooks/use-convex-auth";
 import {
   LayoutDashboard,
   Image as ImageIcon,
@@ -62,11 +61,9 @@ const settingsNavigation = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const stats = useUserStats();
 
   // TODO: Implement token system - using placeholder for now
-  const tokenBalance = 0; // Will be implemented with token purchases
-  const planType = stats?.subscription?.planType || "free";
+  const tokenBalance = 0; // Will be implemented with token
 
   return (
     <div className="bg-background fixed inset-y-0 left-0 z-30 hidden w-64 border-r lg:block">
@@ -155,23 +152,6 @@ export function Sidebar() {
             })}
           </div>
         </nav>
-
-        {/* Plan Badge */}
-        <div className="border-t p-4">
-          <div className="flex items-center justify-between">
-            <Badge
-              variant={planType === "free" ? "outline" : "default"}
-              className="capitalize"
-            >
-              {planType} Plan
-            </Badge>
-            {planType === "free" && (
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/pricing">Upgrade</Link>
-              </Button>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );
