@@ -1,8 +1,34 @@
 {
   "github.copilot.chat.codeGeneration.instructions": [
     {
-      "file": "/docs/development-roadmap.md"
+      "file": "/docs/development-roadmap.md",
+      "instructions": [
+        "When completing tasks mentioned in development-roadmap.md, automatically update the roadmap file by:",
+        "1. Changing [ ] to [x] for completed tasks",
+        "2. Adding ✅ COMPLETED markers for finished phases",
+        "3. Updating progress indicators (⏳ to ✅)",
+        "4. Adding completion dates in format (Month Day, Year)",
+        "5. Moving status from 'NEXT' to 'CURRENT' or 'COMPLETED' as appropriate",
+        "6. Always reference the exact task descriptions from the roadmap when marking completion",
+        "7. Update both individual tasks and their parent sections/phases when all sub-tasks are complete"
+      ]
     }
   ],
-  "chat.mcp.discovery.enabled": true
+  "chat.mcp.discovery.enabled": true,
+  "files.associations": {
+    "*.md": "markdown"
+  },
+  "markdown.preview.doubleClickToSwitchToEditor": false,
+  "markdown.extension.toc.updateOnSave": true,
+  "workbench.editor.enablePreview": false,
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  "typescript.suggest.autoImports": true,
+  "emmet.includeLanguages": {
+    "typescript": "typescriptreact",
+    "javascript": "javascriptreact"
+  }
 }

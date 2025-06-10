@@ -1,0 +1,38 @@
+{
+  "recommendations": [
+    // Essential for TypeScript/React development
+    "ms-vscode.vscode-typescript-next",
+    "bradlc.vscode-tailwindcss",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+
+    // GitHub Copilot (AI assistance)
+    "github.copilot",
+    "github.copilot-chat",
+
+    // Next.js and React
+    "ms-vscode.vscode-json",
+    "formulahendry.auto-rename-tag",
+    "christian-kohler.path-intellisense",
+
+    // Git and project management
+    "eamodio.gitlens",
+    "github.vscode-pull-request-github",
+
+    // Markdown and documentation
+    "yzhang.markdown-all-in-one",
+    "shd101wyy.markdown-preview-enhanced",
+
+    // Utilities
+    "ms-vscode.vscode-json",
+    "redhat.vscode-yaml",
+    "ms-vscode.hexeditor",
+
+    // Database and API tools
+    "humao.rest-client",
+
+    // Theme and UI
+    "pkief.material-icon-theme",
+    "github.github-vscode-theme"
+  ]
+}
