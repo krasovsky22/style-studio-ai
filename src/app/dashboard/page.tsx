@@ -1,7 +1,7 @@
 "use client";
 
 import { useRequireAuth } from "@/hooks/use-auth";
-import { useConvexAuth, useUserStats } from "@/hooks/use-convex-auth";
+import { useUserStats } from "@/hooks/use-convex-auth";
 import { AppLayout } from "@/components/layout/app-layout";
 import { UserProfile } from "@/components/user/user-profile";
 import { StatsCard } from "@/components/ui/stats-card";
@@ -18,8 +18,7 @@ import { Zap, Image as ImageIcon, TrendingUp, Coins } from "lucide-react";
 import Link from "next/link";
 
 export default function DashboardPage() {
-  const { isAuthenticated, isLoading } = useRequireAuth();
-  const { convexUser, ensureUser } = useConvexAuth();
+  const { isAuthenticated, isLoading, convexUser } = useRequireAuth();
   const stats = useUserStats();
 
   if (isLoading) {
@@ -34,13 +33,7 @@ export default function DashboardPage() {
     return null; // useRequireAuth will redirect
   }
 
-  console.log("Convex User:", convexUser);
-  // Ensure user exists in Convex
-  if (!convexUser && isAuthenticated) {
-    ensureUser();
-  }
-
-  const tokenBalance = 0; // TODO: Implement token balance from user data
+  const tokenBalance = convexUser?.tokenBalance || 0;
   const totalGenerations = stats?.totalGenerations || 0;
 
   return (
