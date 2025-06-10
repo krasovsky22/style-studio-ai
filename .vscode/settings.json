@@ -1,0 +1,8 @@
+{
+  "github.copilot.chat.codeGeneration.instructions": [
+    {
+      "file": "/docs/development-roadmap.md"
+    }
+  ],
+  "chat.mcp.discovery.enabled": true
+}
