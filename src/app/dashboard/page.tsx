@@ -34,6 +34,7 @@ export default function DashboardPage() {
     return null; // useRequireAuth will redirect
   }
 
+  console.log("Convex User:", convexUser);
   // Ensure user exists in Convex
   if (!convexUser && isAuthenticated) {
     ensureUser();

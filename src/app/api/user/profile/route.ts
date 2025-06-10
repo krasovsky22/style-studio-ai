@@ -17,7 +17,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -26,7 +26,7 @@ export async function PATCH(request: NextRequest) {
 
     // Update user in Convex
     const updatedUser = await convex.mutation(api.users.updateUser, {
-      userId: session.user.id as Id<"users">,
+      userId: session.user.email as Id<"users">,
       updates: {
         name: validatedData.name,
         // Note: Email updates might require additional verification

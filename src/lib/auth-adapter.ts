@@ -13,6 +13,7 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 export function ConvexAdapter(): Adapter {
   return {
     async createUser(user: Omit<AdapterUser, "id">): Promise<AdapterUser> {
+      console.log("creating user", user);
       const userId = await convex.mutation(api.users.createUser, {
         email: user.email!,
         name: user.name || "",
@@ -33,6 +34,7 @@ export function ConvexAdapter(): Adapter {
         const user = await convex.query(api.users.getUserById, {
           userId: id as Id<"users">,
         });
+
         if (!user) return null;
 
         return {
@@ -51,6 +53,7 @@ export function ConvexAdapter(): Adapter {
 
     async getUserByEmail(email: string): Promise<AdapterUser | null> {
       try {
+        console.log("loading user by email", email);
         const user = await convex.query(api.users.getUserByEmail, { email });
         if (!user) return null;
 

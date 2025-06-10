@@ -114,7 +114,6 @@ This project is fully configured for VS Code with:
 - Image upload and processing
 - AI-powered clothing visualization
 - Real-time generation status
-- Basic subscription plans
 - Payment processing
 
 ### Advanced Features

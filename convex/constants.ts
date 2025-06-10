@@ -1,4 +1,5 @@
 // Application constants
+export const USER_INITIAL_FREE_TOKENS = 10;
 
 // Generation models and their configurations
 export const AI_MODELS = {

@@ -42,13 +42,13 @@ export default function Home() {
             {!isAuthenticated && !isLoading ? (
               <>
                 <Button asChild size="lg" className="sm:px-8">
-                  <Link href="/auth/signup">
+                  <Link href="/signup">
                     Get Started Free
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
                 <Button variant="outline" size="lg" asChild className="sm:px-8">
-                  <Link href="/auth/signin">Sign In</Link>
+                  <Link href="/signin">Sign In</Link>
                 </Button>
               </>
             ) : (

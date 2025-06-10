@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { USER_INITIAL_FREE_TOKENS } from "./constants";
 
 // Create a new user
 export const createUser = mutation({
@@ -32,21 +33,10 @@ export const createUser = mutation({
       provider: args.provider,
       createdAt: now,
       lastLoginAt: now,
-      subscriptionTier: "free",
-      usageCount: 0,
-      resetDate: now + 30 * 24 * 60 * 60 * 1000, // 30 days from now
-    });
-
-    // Create initial free subscription
-    await ctx.db.insert("subscriptions", {
-      userId,
-      planType: "free",
-      status: "active",
-      startDate: now,
-      generationsLimit: 5,
-      generationsUsed: 0,
-      createdAt: now,
-      updatedAt: now,
+      tokenBalance: USER_INITIAL_FREE_TOKENS,
+      totalTokensPurchased: 0,
+      totalTokensUsed: 0,
+      freeTokensGranted: USER_INITIAL_FREE_TOKENS,
     });
 
     // Log user creation
@@ -139,48 +129,6 @@ export const updateLastLogin = mutation({
   },
 });
 
-// Get user's current subscription
-export const getUserSubscription = query({
-  args: { userId: v.id("users") },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("subscriptions")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .filter((q) => q.eq(q.field("status"), "active"))
-      .first();
-  },
-});
-
-// Reset user's monthly usage count
-export const resetMonthlyUsage = mutation({
-  args: { userId: v.id("users") },
-  handler: async (ctx, args) => {
-    const now = Date.now();
-    const nextResetDate = now + 30 * 24 * 60 * 60 * 1000; // 30 days from now
-
-    await ctx.db.patch(args.userId, {
-      usageCount: 0,
-      resetDate: nextResetDate,
-    });
-
-    // Also reset subscription usage
-    const subscription = await ctx.db
-      .query("subscriptions")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .filter((q) => q.eq(q.field("status"), "active"))
-      .first();
-
-    if (subscription) {
-      await ctx.db.patch(subscription._id, {
-        generationsUsed: 0,
-        updatedAt: now,
-      });
-    }
-
-    return true;
-  },
-});
-
 // Get user statistics
 export const getUserStats = query({
   args: { email: v.string() },
@@ -193,13 +141,6 @@ export const getUserStats = query({
     if (!user) {
       return null;
     }
-
-    // Get active subscription
-    const subscription = await ctx.db
-      .query("subscriptions")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .filter((q) => q.eq(q.field("status"), "active"))
-      .first();
 
     // Get generation stats
     const totalGenerations = await ctx.db
@@ -223,13 +164,6 @@ export const getUserStats = query({
       totalGenerations: totalGenerations.length,
       successfulGenerations: successfulGenerations.length,
       monthlyGenerations: monthlyGenerations.length,
-      subscription: subscription
-        ? {
-            planType: subscription.planType,
-            generationsLimit: subscription.generationsLimit,
-            generationsUsed: subscription.generationsUsed,
-          }
-        : null,
       successRate:
         totalGenerations.length > 0
           ? Math.round(

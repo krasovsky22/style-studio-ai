@@ -21,7 +21,7 @@ export function useRequireAuth() {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push("/auth/signin");
+      router.push("/signin");
     }
   }, [isAuthenticated, isLoading, router]);
 
