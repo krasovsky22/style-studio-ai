@@ -133,7 +133,7 @@
 **Next Immediate Steps:**
 
 1. Initialize Convex project and configure deployment
-2. Set up database schema for users, generations, and subscriptions
+2. Set up database schema for users, generations, and token purchases
 3. Configure NextAuth.js authentication system
 4. Create first UI components using shadcn/ui
 5. Implement basic routing structure
@@ -148,26 +148,53 @@
 
 ---
 
-## Phase 1: MVP Core Development (Weeks 2-6) 🔄 NEXT
+## Phase 1: MVP Core Development (Weeks 2-6) ✅ IN PROGRESS
 
-### Week 2: Backend Foundation & Authentication
+### Week 2: Backend Foundation & Authentication ✅ COMPLETED (June 10, 2025)
 
-#### 1. Convex Setup & Database Schema
+#### 1. Convex Setup & Database Schema ✅ COMPLETED
 
 **Priority**: Critical
 **Estimated Time**: 2-3 days
+**Actual Time**: 1 day
+**Status**: ✅ COMPLETED
 
 ##### Tasks:
 
-- [ ] Initialize Convex project and configure deployment
-- [ ] Design and implement database schema:
-  - Users table with profile information
-  - Generations table for AI image generations
-  - Subscriptions table for user plans
-  - Usage tracking table for analytics
-- [ ] Set up Convex authentication
-- [ ] Create basic database queries and mutations
-- [ ] Implement real-time subscriptions for generation status
+- [x] ✅ Initialize Convex project and configure deployment
+- [x] ✅ Design and implement database schema:
+  - [x] ✅ Users table with profile information and token balance
+  - [x] ✅ Generations table for AI image generations with token usage
+  - [x] ✅ Token purchases table for payment tracking
+  - [x] ✅ Usage tracking table for analytics
+  - [x] ✅ Files table for image storage
+- [x] ✅ Set up Convex authentication
+- [x] ✅ Create basic database queries and mutations
+- [x] ✅ Implement real-time subscriptions for generation status
+
+#### 2. NextAuth.js Integration ✅ COMPLETED
+
+**Priority**: Critical
+**Estimated Time**: 2 days
+**Actual Time**: 1 day
+**Status**: ✅ COMPLETED
+
+##### Tasks:
+
+- [x] ✅ Install and configure NextAuth.js
+- [x] ✅ Set up OAuth providers (Google, GitHub)
+- [x] ✅ Integrate with Convex authentication
+- [x] ✅ Create authentication pages (login, register, error)
+- [x] ✅ Implement session management
+- [x] ✅ Set up protected route middleware
+- [x] ✅ Create user profile management
+
+##### Deliverables:
+
+- ✅ Complete authentication system with OAuth
+- ✅ User session management with JWT strategy
+- ✅ Protected routes infrastructure with middleware
+- ✅ Modern authentication UI with error handling
 
 ##### Schema Design:
 
@@ -175,22 +202,22 @@
 Users:
 - id, email, name, profileImage
 - createdAt, lastLoginAt
-- subscriptionTier, usageCount, resetDate
+- tokenBalance, totalTokensPurchased, totalTokensUsed
 
 Generations:
 - id, userId, status, createdAt
 - productImageUrl, modelImageUrl, resultImageUrl
 - prompt, parameters, processingTime
-- error, retryCount
+- tokensUsed, error, retryCount
 
-Subscriptions:
-- id, userId, planType, status
-- startDate, endDate, stripeSubscriptionId
-- generationsLimit, generationsUsed
+TokenPurchases:
+- id, userId, amount, tokensReceived, status
+- transactionId, createdAt, paymentMethod
+- stripePaymentIntentId
 
 Usage:
 - id, userId, action, timestamp
-- metadata, ipAddress
+- tokensUsed, metadata, ipAddress
 ```
 
 #### 2. NextAuth.js Integration
@@ -341,18 +368,18 @@ Usage:
 ##### Tasks:
 
 - [ ] Set up Stripe account and configuration
-- [ ] Create subscription plans in Stripe
-- [ ] Implement checkout flow
-- [ ] Add subscription management
-- [ ] Create billing history page
+- [ ] Create token packages in Stripe
+- [ ] Implement checkout flow for token purchases
+- [ ] Add token balance management
+- [ ] Create purchase history page
 - [ ] Implement webhook handling for payment events
 
-##### Subscription Tiers:
+##### Token Packages:
 
-- Free: 5 generations/month
-- Basic: 50 generations/month ($9.99)
-- Pro: 200 generations/month ($29.99)
-- Enterprise: Unlimited ($99.99)
+- Starter: 25 tokens ($9.99)
+- Standard: 100 tokens ($29.99)
+- Pro: 300 tokens ($79.99)
+- Enterprise: 1000 tokens ($199.99)
 
 #### 2. Dashboard & User Experience
 
@@ -362,7 +389,7 @@ Usage:
 ##### Tasks:
 
 - [ ] Create user dashboard with statistics
-- [ ] Implement usage tracking display
+- [ ] Implement token balance and usage tracking display
 - [ ] Add generation history with filtering
 - [ ] Create account settings page
 - [ ] Implement data export functionality
@@ -633,9 +660,9 @@ src/
 ### Business Metrics
 
 - Monthly Active Users (MAU)
-- Conversion rate from free to paid
-- Customer retention rate
-- Average revenue per user (ARPU)
+- Token purchase conversion rate
+- Average tokens purchased per user
+- Token usage patterns and frequency
 
 ### User Experience Metrics
 
@@ -690,3 +717,52 @@ Key success factors:
 - 🔄 Continuous performance optimization planned
 
 The timeline is aggressive but achievable with proper resource allocation and focused execution. **Phase 0 has been completed successfully**, providing a solid foundation for rapid development. Regular milestone reviews and adjustments will be necessary to ensure successful delivery.
+
+---
+
+## Token System Implementation Strategy
+
+#### Database Design for Tokens
+
+The token system requires careful database design to ensure accuracy and prevent token theft:
+
+##### Key Tables:
+
+1. **Users Table**
+
+   - `tokenBalance`: Current available tokens
+   - `totalTokensPurchased`: Lifetime token purchases
+   - `totalTokensUsed`: Lifetime token usage
+   - `freeTokensGranted`: Free tokens given to user
+
+2. **TokenPurchases Table**
+
+   - Tracks all token purchases with Stripe integration
+   - Includes purchase amount, tokens received, and transaction status
+   - Links to Stripe payment intent for verification
+
+3. **Generations Table**
+
+   - `tokensUsed`: Number of tokens consumed (1 for success, 0 for failure)
+   - Links generation cost to token consumption
+
+4. **TokenTransactions Table** (Future Enhancement)
+   - Detailed log of all token movements
+   - Supports refunds, bonuses, and transfers
+
+#### Token Security Measures
+
+1. **Atomic Operations**: Token deduction and generation creation in single transaction
+2. **Balance Validation**: Check sufficient tokens before starting generation
+3. **Failure Handling**: Refund tokens if generation fails
+4. **Audit Trail**: Complete history of token usage for support
+
+#### Token Purchase Flow
+
+1. User selects token package
+2. Stripe checkout session created
+3. Payment processed by Stripe
+4. Webhook confirms payment
+5. Tokens added to user balance
+6. Purchase recorded in database
+7. User notified of successful purchase

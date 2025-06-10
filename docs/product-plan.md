@@ -73,7 +73,7 @@ Style Studio AI is a web application that enables clothing store owners to visua
 
    - ✅ Industry standard
    - Excellent documentation and developer experience
-   - Good for handling subscriptions
+   - Good for handling one-time payments and token purchases
 
 8. **Hosting (Vercel)**
    - ✅ Perfect for Next.js applications
@@ -98,10 +98,10 @@ Style Studio AI is a web application that enables clothing store owners to visua
    - Basic profile management
    - Simple dashboard
 
-3. **Basic Subscription**
+3. **Token-Based Payment System**
 
-   - Free tier with limited generations
-   - Basic paid plan
+   - Free tokens for new users
+   - Token purchase packages
    - Simple payment integration
 
 4. **Basic Image Management**
@@ -125,11 +125,11 @@ Style Studio AI is a web application that enables clothing store owners to visua
    - Custom model training
    - API access
 
-3. **Advanced Subscription**
-   - Multiple pricing tiers
+3. **Advanced Token System**
+   - Token bundles and discounts
    - Usage analytics
-   - Team accounts
-   - Custom plans
+   - Token sharing between team members
+   - Custom pricing for enterprise
 
 ### Medium Priority
 
@@ -217,10 +217,10 @@ Style Studio AI is a web application that enables clothing store owners to visua
 
 2. **Business Metrics**
 
-   - Conversion rate
-   - Revenue per user
+   - Token purchase conversion rate
+   - Average token purchase value
    - Customer acquisition cost
-   - Churn rate
+   - Token usage patterns
 
 3. **Technical Metrics**
    - Generation speed
@@ -249,3 +249,38 @@ Style Studio AI is a web application that enables clothing store owners to visua
    - User feedback loops
    - Performance monitoring
    - Security audits
+
+## Pricing Model
+
+### Token-Based System
+
+Style Studio AI uses a token-based pricing model that provides flexibility for users of all sizes:
+
+#### How Tokens Work
+
+- **1 Token = 1 AI Image Generation**: Each successful image generation consumes 1 token
+- **Failed Generations**: No tokens are deducted for failed generations
+- **Token Validity**: Tokens never expire once purchased
+- **Free Tokens**: New users receive 5 free tokens to try the service
+
+#### Token Packages
+
+- **Starter Pack**: 25 tokens for $9.99 ($0.40/token)
+- **Standard Pack**: 100 tokens for $29.99 ($0.30/token) - Most Popular
+- **Pro Pack**: 300 tokens for $79.99 ($0.27/token) - Best Value
+- **Enterprise Pack**: 1000 tokens for $199.99 ($0.20/token)
+
+#### Benefits of Token Model
+
+1. **Pay-as-you-use**: Users only pay for what they actually generate
+2. **No Monthly Commitments**: No recurring subscriptions or cancellation hassles
+3. **Bulk Discounts**: Larger token packages offer better per-token rates
+4. **Flexible Usage**: Perfect for seasonal businesses or variable workloads
+5. **Enterprise Friendly**: Large token packages for high-volume users
+
+#### Future Token Features
+
+- **Token Sharing**: Team accounts can share token pools
+- **Custom Packages**: Enterprise customers can request custom token amounts
+- **Bonus Tokens**: Promotional offers and referral bonuses
+- **API Access**: Same token system for API users
