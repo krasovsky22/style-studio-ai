@@ -209,14 +209,18 @@ class ReplicateClient {
       throw new Error(`Unsupported model: ${request.model}`);
     }
 
-    if (request.input.width && request.input.height) {
-      const aspectRatio = `${request.input.width}:${request.input.height}`;
-      if (!model.supportedAspectRatios?.includes(aspectRatio)) {
-        throw new Error(
-          `Aspect ratio ${aspectRatio} not supported by ${model.name}`
-        );
-      }
-    }
+    // if (request.input.width && request.input.height) {
+    //   const aspectRatio = `${request.input.width}:${request.input.height}`;
+
+    //   console.log(
+    //     `Validating aspect ratio ${JSON.stringify(request, "", 2)} for model ${JSON.stringify(model, "", 2)}`
+    //   );
+    //   if (!model.supportedAspectRatios?.includes(aspectRatio)) {
+    //     throw new Error(
+    //       `Aspect ratio ${aspectRatio} not supported by ${model.name}`
+    //     );
+    //   }
+    // }
   }
 }
 

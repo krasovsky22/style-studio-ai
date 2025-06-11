@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { generationSchema } from "@/lib/validations";
-import { promptEngineer } from "@/lib/prompt-engineering";
 import { GenerationOptions } from "@/types/generation";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { generationWorkflow } from "@/services/generation-workflow";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -40,15 +40,16 @@ export async function POST(request: NextRequest) {
     // Cast the validated data to GenerationOptions to ensure type safety
     const typedOptions = generateOptions as GenerationOptions;
 
-    // Generate optimized prompt
-    const promptResult = promptEngineer.generatePrompt(typedOptions);
+    // Use unified generation workflow
+    const generationResult =
+      await generationWorkflow.startGeneration(typedOptions);
 
     // Create generation using Convex mutation directly
     const generation = await convex.mutation(api.generations.createGeneration, {
       userId: session.user.id as Id<"users">,
       productImageUrl: typedOptions.productImageUrl,
       modelImageUrl: typedOptions.modelImageUrl,
-      prompt: promptResult.prompt,
+      prompt: generationResult.promptResult.prompt,
       parameters: {
         model: typedOptions.model,
         style: typedOptions.style,
@@ -58,7 +59,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ generationId: generation });
+    return NextResponse.json({
+      generationId: generation,
+      replicateId: generationResult.replicateId,
+      estimatedTime: generationResult.estimatedTime,
+      prompt: generationResult.promptResult.prompt,
+    });
   } catch (error) {
     console.error("Generation creation failed:", error);
 

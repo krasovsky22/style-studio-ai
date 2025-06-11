@@ -13,6 +13,7 @@ import {
   GenerationRequest,
   GenerationStatus,
   QueueInfo,
+  PromptResult,
 } from "@/types/generation";
 
 /**
@@ -21,12 +22,13 @@ import {
  */
 export class GenerationService {
   /**
-   * Start a new generation process
+   * Complete generation workflow: validate, generate prompt, and start generation
    */
-  async startGeneration(options: GenerationOptions): Promise<{
+  async createGeneration(options: GenerationOptions): Promise<{
     generationId: string;
     replicateId: string;
     estimatedTime: string;
+    promptResult: PromptResult;
   }> {
     try {
       // Validate inputs
@@ -35,6 +37,36 @@ export class GenerationService {
       // Generate optimized prompt
       const promptResult = promptEngineer.generatePrompt(options);
 
+      console.log("Generated prompt:", promptResult, options);
+
+      // Start generation with combined data
+      const result = await this.startGenerationWithPrompt(
+        options,
+        promptResult
+      );
+
+      return {
+        ...result,
+        promptResult,
+      };
+    } catch (error) {
+      console.error("Complete generation workflow failed:", error);
+      throw new Error(`Failed to create generation: ${error}`);
+    }
+  }
+
+  /**
+   * Start a new generation process with pre-generated prompt
+   */
+  private async startGenerationWithPrompt(
+    options: GenerationOptions,
+    promptResult: PromptResult
+  ): Promise<{
+    generationId: string;
+    replicateId: string;
+    estimatedTime: string;
+  }> {
+    try {
       // Prepare generation request
       const request = this.prepareGenerationRequest(options, promptResult);
 
@@ -405,7 +437,7 @@ export class GenerationService {
       try {
         console.log(`Generation attempt ${attempt}/${maxRetries}`);
 
-        const { replicateId } = await this.startGeneration(originalOptions);
+        const { replicateId } = await this.createGeneration(originalOptions);
         const result = await this.pollGeneration(replicateId);
 
         if (result.success) {

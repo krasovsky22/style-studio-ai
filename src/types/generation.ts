@@ -133,6 +133,24 @@ export interface PromptResult {
   detectedElements: string[];
 }
 
+// Combined generation input that includes both options and prompt result
+export interface GenerationInput {
+  options: GenerationOptions;
+  promptResult: PromptResult;
+}
+
+// Simplified generation request for the API route
+export interface GenerationApiRequest {
+  productImageUrl: string;
+  modelImageUrl?: string;
+  style: GenerationOptions["style"];
+  aspectRatio: GenerationOptions["aspectRatio"];
+  quality: GenerationOptions["quality"];
+  model: GenerationOptions["model"];
+  customPrompt?: string;
+  parameters?: GenerationOptions["parameters"];
+}
+
 // Generation entity type (matches Convex schema)
 export interface Generation {
   _id: string;
@@ -170,4 +188,13 @@ export interface ReplicateWebhookEvent {
   metrics?: {
     predict_time?: number;
   };
+}
+
+// API response type for generation endpoints
+export interface GenerationApiResponse {
+  generationId: string;
+  replicateId: string;
+  estimatedTime: string;
+  prompt: string;
+  status?: "pending" | "processing" | "completed" | "failed" | "cancelled";
 }
