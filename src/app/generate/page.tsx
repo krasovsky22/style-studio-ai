@@ -1,7 +1,12 @@
 "use client";
 
-import { useRequireAuth } from "@/hooks/use-auth";
+import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { Id } from "@/convex/_generated/dataModel";
 import { Header } from "@/components/layout/header";
+import { GenerationForm } from "@/components/generation/generation-form";
+import { GenerationStatusDisplay } from "@/components/generation/generation-status";
 import {
   Card,
   CardContent,
@@ -10,154 +15,371 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, Upload, Sparkles, ArrowRight } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Icons } from "@/components/ui/icons";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { GenerationOptions } from "@/types/generation";
+import { toast } from "sonner";
+import { useConvexAuth } from "@/hooks/use-convex-auth";
 
 export default function GeneratePage() {
-  const { isAuthenticated, isLoading } = useRequireAuth();
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [currentGeneration, setCurrentGeneration] =
+    useState<Id<"generations"> | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [lastError, setLastError] = useState<{
+    message: string;
+    code?: string;
+    details?: string;
+  } | null>(null);
+  const [lastGenerationOptions, setLastGenerationOptions] =
+    useState<GenerationOptions | null>(null);
 
-  if (isLoading) {
+  // Get user's token balance
+  const { convexUser } = useConvexAuth();
+
+  const handleGeneration = async (options: GenerationOptions) => {
+    if (!session?.user?.id) {
+      toast.error("Please sign in to generate images");
+      router.push("/auth/signin");
+      return;
+    }
+
+    // Store the options for potential retry
+    setLastGenerationOptions(options);
+
+    // Clear any previous errors
+    setLastError(null);
+    setIsGenerating(true);
+
+    try {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(options),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        const errorInfo = {
+          message: errorData.error || "Generation failed",
+          code: errorData.code,
+          details: errorData.details,
+        };
+
+        setLastError(errorInfo);
+
+        // Show specific error messages based on error codes
+        switch (errorData.code) {
+          case "INSUFFICIENT_TOKENS":
+            toast.error(
+              "Insufficient tokens. Please purchase more tokens to continue."
+            );
+            break;
+          case "RATE_LIMIT_EXCEEDED":
+            toast.error(
+              "Rate limit exceeded. Please wait a moment before trying again."
+            );
+            break;
+          case "VALIDATION_ERROR":
+            toast.error(
+              "Invalid generation settings. Please check your inputs."
+            );
+            break;
+          case "IMAGE_VALIDATION_ERROR":
+            toast.error(
+              "Image validation failed. Please check your uploaded images."
+            );
+            break;
+          case "MODEL_ERROR":
+            toast.error(
+              "AI model configuration error. Please try a different model."
+            );
+            break;
+          default:
+            toast.error(errorData.error || "Generation failed");
+        }
+
+        throw new Error(errorData.error || "Generation failed");
+      }
+
+      const generation = await response.json();
+      setCurrentGeneration(generation._id);
+      setLastError(null); // Clear any previous errors on success
+      toast.success("Generation started!");
+    } catch (error) {
+      console.error("Generation failed:", error);
+
+      // If we haven't already set a detailed error, set a generic one
+      if (!lastError) {
+        setLastError({
+          message: error instanceof Error ? error.message : "Generation failed",
+          code: "UNKNOWN_ERROR",
+        });
+      }
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const retryGeneration = async () => {
+    if (lastGenerationOptions) {
+      await handleGeneration(lastGenerationOptions);
+    }
+  };
+
+  const handleGenerationComplete = () => {
+    // Clear any errors on successful completion
+    setLastError(null);
+    toast.success("Image generated successfully!");
+  };
+
+  const handleGenerationError = (error: string) => {
+    const errorInfo = {
+      message: error,
+      code: "GENERATION_PROCESSING_ERROR",
+    };
+    setLastError(errorInfo);
+    toast.error(`Generation failed: ${error}`);
+    setCurrentGeneration(null);
+  };
+
+  const startNewGeneration = () => {
+    setCurrentGeneration(null);
+    setLastError(null); // Clear errors when starting fresh
+  };
+
+  if (!session) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="bg-background min-h-screen">
+        <Header />
+        <div className="container mx-auto py-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Sign in Required</CardTitle>
+              <CardDescription>
+                Please sign in to start generating AI fashion images.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => router.push("/auth/signin")}>
+                <Icons.LogIn className="mr-2 h-4 w-4" />
+                Sign In
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
-  }
-
-  if (!isAuthenticated) {
-    return null; // useRequireAuth will redirect
   }
 
   return (
     <div className="bg-background min-h-screen">
       <Header />
-      <main className="container mx-auto space-y-6 py-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Generate</h1>
-            <p className="text-muted-foreground">
-              Create AI-powered fashion visualizations with your product images.
-            </p>
-          </div>
-          <Badge variant="outline" className="w-fit">
-            <Sparkles className="mr-1 h-3 w-3" />
-            AI Powered
-          </Badge>
+      <div className="container mx-auto space-y-8 py-8">
+        {/* Header */}
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">
+            AI Fashion Generator
+          </h1>
+          <p className="text-muted-foreground">
+            Transform your clothing designs with AI-powered fashion
+            visualization
+          </p>
         </div>
 
-        {/* Main Generation Interface */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Upload Section */}
+        {/* Token Balance */}
+        {convexUser && (
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Upload className="h-5 w-5" />
-                Upload Product Image
-              </CardTitle>
-              <CardDescription>
-                Upload a clear image of your clothing item or fashion product
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="border-muted-foreground/25 rounded-lg border-2 border-dashed p-8 text-center">
-                <Upload className="text-muted-foreground/50 mx-auto h-12 w-12" />
-                <h3 className="mt-4 text-lg font-semibold">Coming Soon</h3>
-                <p className="text-muted-foreground">
-                  Drag and drop your image here, or click to browse
-                </p>
-                <Button className="mt-4" disabled>
-                  Select File
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Icons.Zap className="h-5 w-5 text-yellow-500" />
+                  <span className="font-medium">Token Balance</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-lg font-bold">
+                    {convexUser.tokenBalance} tokens
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push("/dashboard/tokens")}
+                  >
+                    Buy Tokens
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="grid gap-8 lg:grid-cols-2">
+          {/* Generation Form */}
+          <div className="space-y-6">
+            {/* Error Display */}
+            {lastError && (
+              <Alert variant="destructive">
+                <Icons.AlertCircle className="h-4 w-4" />
+                <AlertTitle>
+                  Generation Failed
+                  {lastError.code && (
+                    <span className="ml-2 text-xs font-normal opacity-75">
+                      ({lastError.code})
+                    </span>
+                  )}
+                </AlertTitle>
+                <AlertDescription className="space-y-2">
+                  <p>{lastError.message}</p>
+                  {lastError.details && (
+                    <details className="text-xs opacity-75">
+                      <summary className="cursor-pointer hover:opacity-100">
+                        Technical Details
+                      </summary>
+                      <pre className="mt-1 font-mono whitespace-pre-wrap">
+                        {lastError.details}
+                      </pre>
+                    </details>
+                  )}
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setLastError(null)}
+                    >
+                      <Icons.X className="mr-1 h-3 w-3" />
+                      Dismiss
+                    </Button>
+                    {lastGenerationOptions && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={retryGeneration}
+                        disabled={isGenerating}
+                      >
+                        <Icons.RotateCcw className="mr-1 h-3 w-3" />
+                        Retry
+                      </Button>
+                    )}
+                    {lastError.code === "INSUFFICIENT_TOKENS" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push("/dashboard/tokens")}
+                      >
+                        <Icons.Zap className="mr-1 h-3 w-3" />
+                        Buy Tokens
+                      </Button>
+                    )}
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Create New Generation</CardTitle>
+                <CardDescription>
+                  Upload your product image and customize the generation
+                  settings
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <GenerationForm
+                  onSubmit={handleGeneration}
+                  isLoading={isGenerating}
+                  tokenBalance={convexUser?.tokenBalance || 0}
+                />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Generation Status */}
+          <div className="space-y-6">
+            {currentGeneration ? (
+              <div className="space-y-4">
+                <GenerationStatusDisplay
+                  generationId={currentGeneration}
+                  onComplete={handleGenerationComplete}
+                  onError={handleGenerationError}
+                />
+
+                <Button
+                  variant="outline"
+                  onClick={startNewGeneration}
+                  className="w-full"
+                >
+                  <Icons.Plus className="mr-2 h-4 w-4" />
+                  Start New Generation
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Getting Started</CardTitle>
+                  <CardDescription>
+                    Follow these steps to generate your first AI fashion image
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full text-sm font-medium">
+                        1
+                      </div>
+                      <div>
+                        <h4 className="font-medium">Upload Product Image</h4>
+                        <p className="text-muted-foreground text-sm">
+                          Add a clear image of your clothing item
+                        </p>
+                      </div>
+                    </div>
 
-          {/* Settings Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Generation Settings</CardTitle>
-              <CardDescription>
-                Customize your AI generation parameters
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Style</label>
-                <p className="text-muted-foreground text-sm">Coming soon</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Model Type</label>
-                <p className="text-muted-foreground text-sm">Coming soon</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Background</label>
-                <p className="text-muted-foreground text-sm">Coming soon</p>
-              </div>
-              <Button className="w-full" disabled>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate Image
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
+                    <div className="flex items-start gap-3">
+                      <div className="bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full text-sm font-medium">
+                        2
+                      </div>
+                      <div>
+                        <h4 className="font-medium">Choose Style & Settings</h4>
+                        <p className="text-muted-foreground text-sm">
+                          Select your preferred style and quality settings
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full text-sm font-medium">
+                        3
+                      </div>
+                      <div>
+                        <h4 className="font-medium">Generate & Download</h4>
+                        <p className="text-muted-foreground text-sm">
+                          AI will create your fashion visualization
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Tips for Best Results</h4>
+                    <ul className="text-muted-foreground space-y-1 text-sm">
+                      <li>• Use high-quality, well-lit product images</li>
+                      <li>• Try different styles to see various looks</li>
+                      <li>• Higher quality settings produce better results</li>
+                      <li>• Add custom prompts for specific requirements</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
-
-        {/* Process Overview */}
-        <Card>
-          <CardHeader>
-            <CardTitle>How It Works</CardTitle>
-            <CardDescription>
-              Our AI-powered generation process in three simple steps
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="space-y-2 text-center">
-                <div className="bg-primary text-primary-foreground mx-auto flex h-8 w-8 items-center justify-center rounded-full font-semibold">
-                  1
-                </div>
-                <h3 className="font-semibold">Upload</h3>
-                <p className="text-muted-foreground text-sm">
-                  Upload your product or clothing image
-                </p>
-              </div>
-              <div className="space-y-2 text-center">
-                <div className="bg-primary text-primary-foreground mx-auto flex h-8 w-8 items-center justify-center rounded-full font-semibold">
-                  2
-                </div>
-                <h3 className="font-semibold">Configure</h3>
-                <p className="text-muted-foreground text-sm">
-                  Choose your style and generation parameters
-                </p>
-              </div>
-              <div className="space-y-2 text-center">
-                <div className="bg-primary text-primary-foreground mx-auto flex h-8 w-8 items-center justify-center rounded-full font-semibold">
-                  3
-                </div>
-                <h3 className="font-semibold">Generate</h3>
-                <p className="text-muted-foreground text-sm">
-                  Get your AI-generated fashion visualization
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Coming Soon Notice */}
-        <Card className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/10">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-400">
-              <Sparkles className="h-5 w-5" />
-              <h3 className="font-semibold">AI Generation Coming Soon</h3>
-            </div>
-            <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
-              We&apos;re working hard to bring you the most advanced AI fashion
-              generation capabilities. The generation interface will be
-              available in the next update.
-            </p>
-          </CardContent>
-        </Card>
-      </main>
+      </div>
     </div>
   );
 }

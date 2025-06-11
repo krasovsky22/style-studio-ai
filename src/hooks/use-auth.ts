@@ -70,7 +70,15 @@ export function useRequireAuth() {
     return () => {
       isMounted = false;
     };
-  }, [user?.email, isAuthenticated, convexUser, createUser, convexInitialized]);
+  }, [
+    user?.email,
+    user?.name,
+    user?.image,
+    isAuthenticated,
+    convexUser,
+    createUser,
+    convexInitialized,
+  ]);
 
   // Calculate loading state - we're loading if NextAuth is loading OR if we're waiting for Convex user initialization
   const totalIsLoading = isLoading || (isAuthenticated && !convexInitialized);
