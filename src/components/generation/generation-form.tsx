@@ -49,7 +49,7 @@ import { StylePresets } from "./style-presets";
 interface GenerationFormData {
   productImageUrl: string;
   modelImageUrl?: string;
-  prompt?: string;
+  customPrompt?: string;
   style: GenerationOptions["style"];
   quality: GenerationOptions["quality"];
   aspectRatio: GenerationOptions["aspectRatio"];
@@ -92,7 +92,7 @@ export function GenerationForm({
     defaultValues: {
       productImageUrl: "",
       modelImageUrl: "",
-      prompt: "",
+      customPrompt: "",
       style: "casual",
       quality: "standard",
       aspectRatio: "3:4",
@@ -132,7 +132,7 @@ export function GenerationForm({
       fieldErrors.productImageUrl = "Product image is required";
     }
 
-    if (watchedValues.prompt && watchedValues.prompt.length > 500) {
+    if (watchedValues.customPrompt && watchedValues.customPrompt.length > 500) {
       errors.push("Custom prompt too long (max 500 characters)");
       fieldErrors.prompt = "Custom prompt too long (max 500 characters)";
     }
@@ -163,7 +163,7 @@ export function GenerationForm({
       await onSubmit({
         productImageUrl: data.productImageUrl,
         modelImageUrl: data.modelImageUrl,
-        prompt: data.prompt,
+        customPrompt: data.customPrompt,
         style: data.style,
         quality: data.quality,
         aspectRatio: data.aspectRatio,
@@ -322,13 +322,13 @@ export function GenerationForm({
               </CardHeader>
               <CardContent>
                 <Textarea
-                  {...register("prompt")}
+                  {...register("customPrompt")}
                   placeholder="e.g., professional lighting, studio background, fashion photography..."
                   className="min-h-[100px]"
                 />
-                {validationErrors.prompt && (
+                {validationErrors.customPrompt && (
                   <p className="mt-2 text-sm text-red-500">
-                    {validationErrors.prompt}
+                    {validationErrors.customPrompt}
                   </p>
                 )}
               </CardContent>

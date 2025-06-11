@@ -459,67 +459,28 @@ export class GenerationService {
   }
 
   /**
-   * Create a new generation using Convex backend
-   */
-  async createGeneration(
-    userId: string,
-    options: GenerationOptions
-  ): Promise<{ _id: string }> {
-    try {
-      // Validate inputs first
-      await this.validateGenerationInputs(options);
-
-      // Generate optimized prompt
-      const promptResult = promptEngineer.generatePrompt(options);
-
-      // Start generation via Convex mutation
-      // This will be implemented by calling the Convex API
-      const response = await fetch("/api/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId,
-          productImageUrl: options.productImageUrl,
-          modelImageUrl: options.modelImageUrl,
-          prompt: promptResult.enhancedPrompt,
-          parameters: {
-            model: options.model,
-            style: options.style,
-            quality: options.quality,
-            aspectRatio: options.aspectRatio,
-            ...options.parameters,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to create generation");
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("Generation creation failed:", error);
-      throw error;
-    }
-  }
-
-  /**
    * Handle Replicate webhook events
    */
   async handleWebhook(webhookData: {
     id: string;
     status: string;
-    output?: string[];
+    output?: string | string[];
     error?: string;
   }): Promise<void> {
     try {
       // Process webhook and update generation status
       console.log("Processing Replicate webhook:", webhookData);
 
+      // Normalize output to array format
+      const normalizedOutput = webhookData.output
+        ? Array.isArray(webhookData.output)
+          ? webhookData.output
+          : [webhookData.output]
+        : undefined;
+
       // This would update the generation in Convex based on Replicate status
       // Implementation depends on webhook data structure
+      console.log("Normalized output:", normalizedOutput);
     } catch (error) {
       console.error("Webhook processing failed:", error);
       throw error;

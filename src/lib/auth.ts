@@ -1,11 +1,13 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import GitHubProvider from "next-auth/providers/github";
-// Note: Using database session strategy instead of adapter for now
-// import { ConvexAdapter } from "./auth-adapter"
+
+import { api } from "@/convex/_generated/api";
+import { ConvexHttpClient } from "convex/browser";
+
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export const authOptions: NextAuthOptions = {
-  // adapter: ConvexAdapter(),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -28,20 +30,32 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account }) {
       // Persist the OAuth access_token and user id to the token right after signin
       if (account && user) {
+        console.log("JWT callback:", { token, user, account });
         token.accessToken = account.access_token;
         token.userId = user.id;
+
+        const convexUser = await convex.query(api.users.getUserByEmail, {
+          email: token.email!,
+        });
+
+        if (!convexUser) {
+          throw new Error("Convex user found " + token.email);
+        }
+
+        token.convexUserId = convexUser._id as string;
       }
       return token;
     },
     async session({ session, token }) {
       // Send properties to the client
       if (token && session.user) {
-        session.user.id = token.userId as string;
+        session.user.id = token.convexUserId as string;
         session.accessToken = token.accessToken as string;
       }
       return session;
     },
-    async signIn({ account }) {
+    async signIn(params) {
+      const { account } = params;
       // Allow OAuth providers
       if (account?.provider === "google" || account?.provider === "github") {
         return true;

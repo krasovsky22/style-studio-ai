@@ -13,27 +13,60 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Icons } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
-import { Generation, GenerationStatus } from "@/types/generation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
 import Image from "next/image";
 
+type GenerationStatus =
+  | "pending"
+  | "processing"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+// Type for the generation object returned from Convex
+type ConvexGeneration = {
+  _id: Id<"generations">;
+  _creationTime: number;
+  userId: Id<"users">;
+  status: GenerationStatus;
+  productImageUrl: string;
+  modelImageUrl?: string;
+  resultImageUrl?: string;
+  prompt: string;
+  parameters: {
+    model: string;
+    style?: string;
+    quality?: string;
+    aspectRatio?: string;
+    seed?: number;
+  };
+  tokensUsed: number;
+  processingTime?: number;
+  completedAt?: number;
+  error?: string;
+  retryCount: number;
+  replicateId?: string;
+  cloudinaryPublicId?: string;
+  createdAt: number;
+};
+
 interface GenerationStatusDisplayProps {
   generationId: Id<"generations">;
-  onComplete?: (generation: Generation) => void;
+  onComplete?: (generation: ConvexGeneration) => void;
   onError?: (error: string) => void;
   className?: string;
 }
 
 const statusConfig = {
-  queued: {
-    label: "Queued",
-    description: "Waiting in generation queue...",
+  pending: {
+    label: "Pending",
+    description: "Waiting to start generation...",
     icon: Icons.Clock,
     color: "bg-blue-500",
-    progress: 10,
+    progress: 5,
   },
   processing: {
     label: "Processing",
@@ -171,7 +204,7 @@ export function GenerationStatusDisplay({
           <div>
             <span className="text-muted-foreground">Style:</span>
             <span className="ml-2 font-medium capitalize">
-              {generation.style}
+              {generation.parameters.style || "default"}
             </span>
           </div>
           {generation.processingTime && (

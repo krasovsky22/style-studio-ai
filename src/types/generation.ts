@@ -44,7 +44,7 @@ export interface GenerationOptions {
   aspectRatio: "1:1" | "3:4" | "4:3" | "16:9";
   quality: "draft" | "standard" | "high" | "ultra";
   model: "stable-diffusion-xl" | "stable-diffusion-3" | "flux-dev";
-  prompt?: string;
+  customPrompt?: string;
   parameters?: {
     guidance_scale: number;
     num_inference_steps: number;

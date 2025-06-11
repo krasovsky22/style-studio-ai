@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { GenerationService } from "@/services/generation";
 import { generationSchema } from "@/lib/validations";
+import { promptEngineer } from "@/lib/prompt-engineering";
 import { GenerationOptions } from "@/types/generation";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@/convex/_generated/api";
+
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,14 +36,29 @@ export async function POST(request: NextRequest) {
 
     const { data: generateOptions } = validationResult;
 
-    // Create generation using the service
-    const generationService = new GenerationService();
-    const generation = await generationService.createGeneration(
-      session.user.id,
-      generateOptions as GenerationOptions
-    );
+    // Cast the validated data to GenerationOptions to ensure type safety
+    const typedOptions = generateOptions as GenerationOptions;
 
-    return NextResponse.json(generation);
+    // Generate optimized prompt
+    const promptResult = promptEngineer.generatePrompt(typedOptions);
+    console.log(session.user);
+
+    // Create generation using Convex mutation directly
+    const generation = await convex.mutation(api.generations.createGeneration, {
+      userId: session.user.id,
+      productImageUrl: typedOptions.productImageUrl,
+      modelImageUrl: typedOptions.modelImageUrl,
+      prompt: promptResult.prompt,
+      parameters: {
+        model: typedOptions.model,
+        style: typedOptions.style,
+        quality: typedOptions.quality,
+        aspectRatio: typedOptions.aspectRatio,
+        seed: typedOptions.parameters?.seed,
+      },
+    });
+
+    return NextResponse.json({ generationId: generation });
   } catch (error) {
     console.error("Generation creation failed:", error);
 
