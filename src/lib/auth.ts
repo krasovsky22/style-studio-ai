@@ -34,15 +34,35 @@ export const authOptions: NextAuthOptions = {
         token.accessToken = account.access_token;
         token.userId = user.id;
 
-        const convexUser = await convex.query(api.users.getUserByEmail, {
-          email: token.email!,
-        });
+        // Create or get the user in Convex
+        try {
+          const convexUserId = await convex.mutation(
+            api.users.createOrGetUser,
+            {
+              email: token.email!,
+              name: user.name || "",
+              profileImage: user.image || "",
+              externalId: user.id,
+              provider: account.provider,
+            }
+          );
 
-        if (!convexUser) {
-          throw new Error("Convex user found " + token.email);
+          token.convexUserId = convexUserId as string;
+        } catch (error) {
+          console.error("Failed to create/get Convex user:", error);
+          // Try to find existing user as fallback
+          const convexUser = await convex.query(api.users.getUserByEmail, {
+            email: token.email!,
+          });
+
+          if (convexUser) {
+            token.convexUserId = convexUser._id as string;
+          } else {
+            throw new Error(
+              "Failed to authenticate with Convex: " + token.email
+            );
+          }
         }
-
-        token.convexUserId = convexUser._id as string;
       }
       return token;
     },

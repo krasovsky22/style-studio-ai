@@ -6,6 +6,7 @@ import { promptEngineer } from "@/lib/prompt-engineering";
 import { GenerationOptions } from "@/types/generation";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -41,11 +42,10 @@ export async function POST(request: NextRequest) {
 
     // Generate optimized prompt
     const promptResult = promptEngineer.generatePrompt(typedOptions);
-    console.log(session.user);
 
     // Create generation using Convex mutation directly
     const generation = await convex.mutation(api.generations.createGeneration, {
-      userId: session.user.id,
+      userId: session.user.id as Id<"users">,
       productImageUrl: typedOptions.productImageUrl,
       modelImageUrl: typedOptions.modelImageUrl,
       prompt: promptResult.prompt,

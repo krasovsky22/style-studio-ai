@@ -173,3 +173,68 @@ export const getUserStats = query({
     };
   },
 });
+
+// Create or get user for OAuth login
+export const createOrGetUser = mutation({
+  args: {
+    email: v.string(),
+    name: v.string(),
+    profileImage: v.optional(v.string()),
+    externalId: v.optional(v.string()),
+    provider: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    // First try to find user by email
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+
+    if (existingUser) {
+      // Update user's last login and OAuth info
+      await ctx.db.patch(existingUser._id, {
+        lastLoginAt: now,
+        externalId: args.externalId || existingUser.externalId,
+        provider: args.provider || existingUser.provider,
+        name: args.name || existingUser.name,
+        profileImage: args.profileImage || existingUser.profileImage,
+      });
+
+      // Log login
+      await ctx.db.insert("usage", {
+        userId: existingUser._id,
+        action: "login",
+        timestamp: now,
+      });
+
+      return existingUser._id;
+    }
+
+    // Create new user if doesn't exist
+    const userId = await ctx.db.insert("users", {
+      email: args.email,
+      name: args.name,
+      profileImage: args.profileImage,
+      emailVerified: args.provider ? now : undefined, // Auto-verify OAuth users
+      externalId: args.externalId,
+      provider: args.provider,
+      createdAt: now,
+      lastLoginAt: now,
+      tokenBalance: USER_INITIAL_FREE_TOKENS,
+      totalTokensPurchased: 0,
+      totalTokensUsed: 0,
+      freeTokensGranted: USER_INITIAL_FREE_TOKENS,
+    });
+
+    // Log user creation and login
+    await ctx.db.insert("usage", {
+      userId,
+      action: "login",
+      timestamp: now,
+    });
+
+    return userId;
+  },
+});
