@@ -5,57 +5,30 @@ import { StylePreset, QualitySetting } from "@/types/generation";
 // Style presets for the generation form
 export const STYLE_PRESETS: StylePreset[] = [
   {
-    id: "casual",
-    name: "Casual",
-    description: "Relaxed everyday wear",
-    icon: "Shirt",
+    id: "realistic",
+    name: "Realistic",
+    description: "Photorealistic fashion photography with natural lighting",
+    icon: "Camera",
   },
   {
-    id: "formal",
-    name: "Formal",
-    description: "Professional business attire",
-    icon: "Briefcase",
+    id: "artistic",
+    name: "Artistic",
+    description: "Creative editorial style with artistic composition",
+    icon: "Palette",
   },
   {
-    id: "streetwear",
-    name: "Streetwear",
-    description: "Urban fashion and trends",
-    icon: "Zap",
-  },
-  {
-    id: "athletic",
-    name: "Athletic",
-    description: "Sportswear and activewear",
-    icon: "Activity",
-  },
-  {
-    id: "vintage",
-    name: "Vintage",
-    description: "Classic retro styles",
-    icon: "Clock",
-  },
-  {
-    id: "minimalist",
-    name: "Minimalist",
-    description: "Clean and simple designs",
+    id: "minimal",
+    name: "Minimal",
+    description: "Clean minimalist background with product focus",
     icon: "Minus",
   },
 ];
 
-export const STYLE_PRESETS_IDS = STYLE_PRESETS.map((preset) => preset.id) as [
-  string,
-  ...string[],
-];
+// Export style preset IDs for validation
+export const STYLE_PRESETS_IDS = STYLE_PRESETS.map((preset) => preset.id);
 
 // Quality settings for generation options
 export const QUALITY_SETTINGS: QualitySetting[] = [
-  {
-    id: "draft",
-    name: "Draft",
-    description: "Quick preview",
-    cost: 1,
-    speed: "Fast",
-  },
   {
     id: "standard",
     name: "Standard",
@@ -92,150 +65,84 @@ export const PROMPT_TEMPLATES = {
 };
 
 export const STYLE_VARIATIONS = {
-  // New style options
-  casual: {
-    modifiers:
-      "relaxed, comfortable, everyday wear, natural lighting, lifestyle photography",
-    setting: "casual environment, soft natural lighting, lifestyle setting",
-    negative: "formal, stiff, professional, business attire, uptight",
-  },
-  formal: {
-    modifiers:
-      "professional, elegant, business attire, sharp, polished, sophisticated",
-    setting: "professional studio, dramatic lighting, corporate photography",
-    negative: "casual, messy, wrinkled, informal, relaxed",
-  },
-  streetwear: {
-    modifiers:
-      "urban, trendy, hip-hop inspired, contemporary street fashion, edgy",
-    setting: "urban environment, street photography, modern city backdrop",
-    negative: "formal, traditional, conservative, vintage, outdated",
-  },
-  athletic: {
-    modifiers:
-      "sporty, active, performance wear, dynamic, energetic, fitness-focused",
-    setting:
-      "gym environment, action photography, athletic lighting, sports backdrop",
-    negative: "formal, dressy, restrictive, heavy fabrics, sedentary",
-  },
-  vintage: {
-    modifiers:
-      "retro, classic, timeless, nostalgic, heritage style, period-appropriate",
-    setting:
-      "vintage backdrop, classic photography, warm tones, retro environment",
-    negative: "modern, futuristic, synthetic, contemporary, digital",
-  },
-  minimalist: {
-    modifiers: "clean, simple, understated, modern, refined, sleek",
-    setting:
-      "minimal backdrop, clean lighting, contemporary photography, neutral space",
-    negative: "busy, ornate, excessive decoration, cluttered, complex",
-  },
-  // Legacy support for existing code
   realistic: {
     modifiers:
-      "photorealistic, studio lighting, commercial photography, natural skin tones, professional modeling",
-    setting: "professional photography studio with soft lighting",
-    negative: "cartoon, anime, painting, drawing, artificial, unrealistic skin",
+      "photorealistic fashion photography, studio lighting, commercial quality, detailed fabric textures",
+    setting: "professional studio, controlled lighting, clean background",
+    negative: "cartoon, anime, illustration, painting, sketch, low quality",
   },
   artistic: {
     modifiers:
-      "artistic style, creative lighting, fashion editorial, dramatic composition, artistic interpretation",
-    setting: "creative studio with artistic lighting and composition",
-    negative: "amateur, low quality, blurry, overexposed",
+      "artistic fashion editorial, creative lighting, artistic composition, fashion magazine style",
+    setting: "creative environment, dramatic lighting, artistic backdrop",
+    negative: "boring, plain, amateur, snapshot, poor composition",
   },
   minimal: {
     modifiers:
-      "clean background, minimal styling, product focus, simple composition, neutral lighting",
-    setting: "clean minimal background",
-    negative: "cluttered, busy background, distracting elements",
+      "clean minimalist background, focused product showcase, simple elegant presentation",
+    setting: "minimal white background, soft lighting, clean composition",
+    negative: "cluttered, busy background, distracting elements, complex",
   },
 };
 
 export const QUALITY_MODIFIERS = {
-  draft: {
-    positive: "quick preview, basic quality, clear image",
-    negative: "blurry, distorted, low resolution",
-  },
   standard: {
-    positive: "good quality, clear details, professional photography",
-    negative: "low quality, blurry, pixelated, distorted",
+    positive: "good quality, clear details, well-lit",
+    negative: "blurry, low quality, poor lighting",
   },
   high: {
     positive:
-      "high resolution, sharp details, professional quality, crisp image, excellent lighting",
-    negative: "low resolution, blurry, pixelated, poor lighting, amateur",
+      "high resolution, sharp details, professional photography quality",
+    negative: "pixelated, grainy, amateur quality",
   },
   ultra: {
     positive:
-      "ultra high quality, 8k resolution, award-winning photography, perfect lighting, magazine quality, masterpiece",
-    negative:
-      "low quality, blurry, pixelated, poor composition, amateur photography, distorted",
+      "ultra high quality, 8k resolution, award-winning fashion photography",
+    negative: "compressed, artifacted, low resolution",
   },
 };
 
-// Common negative prompt elements
 export const COMMON_NEGATIVE_PROMPTS = [
-  "nsfw",
-  "nude",
-  "naked",
-  "sexual",
-  "inappropriate",
-  "ugly",
-  "deformed",
-  "disfigured",
-  "mutated",
-  "malformed",
   "blurry",
-  "out of focus",
   "low quality",
-  "pixelated",
+  "distorted",
+  "deformed",
+  "bad anatomy",
   "watermark",
   "signature",
   "text",
-  "logo",
-  "brand name",
-  "multiple people",
-  "crowd",
-  "background people",
-  "bad anatomy",
-  "extra limbs",
-  "missing limbs",
-  "artifacts",
-  "noise",
-  "grain",
-  "compression",
+  "cropped",
+  "out of frame",
+  "worst quality",
+  "low contrast",
+  "underexposed",
+  "overexposed",
+  "amateur",
+  "unnatural",
 ];
 
-// Product type detection patterns
 export const PRODUCT_PATTERNS = {
-  shirt: ["shirt", "blouse", "top", "tee", "t-shirt", "polo"],
-  dress: ["dress", "gown", "frock", "sundress"],
-  pants: ["pants", "trousers", "jeans", "slacks", "leggings"],
-  jacket: ["jacket", "blazer", "coat", "cardigan", "hoodie"],
-  skirt: ["skirt", "mini skirt", "maxi skirt"],
-  shoes: ["shoes", "sneakers", "heels", "boots", "sandals"],
-  accessories: ["bag", "purse", "hat", "jewelry", "watch", "belt"],
+  shirt: ["shirt", "blouse", "top", "tee"],
+  dress: ["dress", "gown", "frock"],
+  pants: ["pants", "trousers", "jeans", "slacks"],
+  jacket: ["jacket", "blazer", "coat", "cardigan"],
+  skirt: ["skirt", "mini", "maxi"],
+  shoes: ["shoes", "boots", "sneakers", "heels"],
+  accessories: ["hat", "bag", "purse", "jewelry", "watch"],
 };
 
-// Model descriptions for different styles
 export const MODEL_DESCRIPTIONS = {
   realistic: [
-    "professional fashion model",
-    "elegant model",
-    "sophisticated model",
-    "confident model",
+    "professional model",
+    "fashion model",
+    "elegant person",
+    "stylish individual",
   ],
   artistic: [
-    "artistic model with creative pose",
-    "expressive fashion model",
-    "dynamic model",
+    "artistic model",
+    "creative individual",
+    "expressive person",
     "artistic subject",
   ],
-  minimal: [
-    "model with clean styling",
-    "minimalist model presentation",
-    "simple model pose",
-    "neutral model styling",
-  ],
+  minimal: ["model", "person", "individual", "subject"],
 };

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Icons } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { AIModel } from "@/types/generation";
-import { AI_MODELS } from "@/constants/replicate";
+import { AI_MODELS } from "@/constants/openai";
 
 interface ModelSelectorProps {
   selected: AIModel;
@@ -20,7 +20,7 @@ export function ModelSelector({
 }: ModelSelectorProps) {
   return (
     <div className={cn("space-y-3", className)}>
-      {Object.values(AI_MODELS).map((model) => {
+      {AI_MODELS.map((model) => {
         const isSelected = selected.id === model.id;
 
         return (

@@ -1,4 +1,3 @@
-import { STYLE_PRESETS_IDS } from "@/constants/prompts";
 import { z } from "zod";
 
 // Authentication schemas
@@ -49,16 +48,16 @@ export const generationSchema = z.object({
     .string()
     .max(500, "Custom prompt too long (max 500 characters)")
     .optional(),
-  style: z.enum(STYLE_PRESETS_IDS, {
+  style: z.enum(["realistic", "artistic", "minimal"], {
     errorMap: () => ({ message: "Please select a valid style preset" }),
   }),
-  quality: z.enum(["draft", "standard", "high", "ultra"], {
+  quality: z.enum(["standard", "high", "ultra"], {
     errorMap: () => ({ message: "Please select a valid quality setting" }),
   }),
-  aspectRatio: z.enum(["1:1", "3:4", "4:3", "16:9"], {
+  aspectRatio: z.enum(["1:1", "16:9", "9:16", "3:2", "2:3"], {
     errorMap: () => ({ message: "Please select a valid aspect ratio" }),
   }),
-  model: z.enum(["stable-diffusion-xl", "stable-diffusion-3", "flux-dev"], {
+  model: z.enum(["gpt-4.1-dalle-3"], {
     errorMap: () => ({ message: "Please select a valid AI model" }),
   }),
   parameters: z

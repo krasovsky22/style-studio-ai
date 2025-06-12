@@ -1,51 +1,39 @@
 // Generation-specific types for AI integration
 
-import { AI_MODELS } from "@/constants/replicate";
-
-export interface ReplicateConfig {
-  apiToken: string;
-  defaultModel: string;
+export interface OpenAIConfig {
+  apiKey: string;
+  baseURL?: string;
   timeoutMs: number;
   retryAttempts: number;
 }
 
 export interface GenerationRequest {
-  model: string;
-  input: {
-    image: string;
-    prompt: string;
-    negative_prompt?: string;
-    num_inference_steps?: number;
-    guidance_scale?: number;
-    width?: number;
-    height?: number;
-    seed?: number;
-  };
+  productImages: string[]; // Multiple product images
+  modelImages?: string[]; // Multiple model images (optional)
+  prompt: string;
+  style: "natural" | "vivid";
+  size: "1024x1024" | "1792x1024" | "1024x1792";
+  quality: "standard" | "hd";
+  n?: number;
 }
 
 export interface GenerationResponse {
   id: string;
-  status: "starting" | "processing" | "succeeded" | "failed" | "canceled";
-  output?: string[];
-  error?: string;
-  metrics?: {
-    predict_time?: number;
-  };
+  created: number;
+  data: Array<{
+    url?: string;
+    b64_json?: string;
+    revised_prompt?: string;
+  }>;
 }
 
 export interface GenerationOptions {
-  productImageUrl: string;
-  modelImageUrl?: string;
-  style:
-    | "casual"
-    | "formal"
-    | "streetwear"
-    | "athletic"
-    | "vintage"
-    | "minimalist";
-  aspectRatio: "1:1" | "3:4" | "4:3" | "16:9";
-  quality: "draft" | "standard" | "high" | "ultra";
-  model: keyof typeof AI_MODELS; // Assuming AI_MODELS is an object mapping model IDs to AIModel
+  productImages: string[]; // Multiple product images
+  modelImages?: string[]; // Multiple model images (optional)
+  style: "realistic" | "artistic" | "minimal";
+  aspectRatio: "1:1" | "16:9" | "9:16" | "3:2" | "2:3";
+  quality: "standard" | "high" | "ultra";
+  model: "gpt-4.1-dalle-3"; // OpenAI model
   customPrompt?: string;
   parameters?: {
     guidance_scale: number;
@@ -71,32 +59,29 @@ export interface AIModel {
   supportedAspectRatios?: string[];
   maxResolution?: string;
   estimatedTime?: string;
-  replicateModel: string; // Made required since we need it for API calls
+  replicateModel?: string; // Made optional for OpenAI models
   cost: number;
   supported_features: string[];
+  max_images?: number; // Maximum images the model can process
+  resolution?: string; // Default resolution
+  quality?: "standard" | "hd"; // OpenAI quality setting
 }
 
 // Style preset configuration
 export interface StylePreset {
-  id: string;
+  id: "realistic" | "artistic" | "minimal";
   name: string;
   description: string;
-  prompt?: string;
-  negativePrompt?: string;
-  preview?: string;
-  icon?: string;
+  icon: string;
 }
 
 // Quality setting configuration
 export interface QualitySetting {
-  id: string;
+  id: "standard" | "high" | "ultra";
   name: string;
   description: string;
-  steps?: number;
-  guidance?: number;
-  tokensRequired?: number;
   cost: number;
-  speed: "Fast" | "Medium" | "Slow" | "Very Slow";
+  speed: string;
 }
 
 // Generation form data

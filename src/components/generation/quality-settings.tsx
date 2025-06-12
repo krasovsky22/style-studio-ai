@@ -37,9 +37,12 @@ export function QualitySettings({
     <div className={cn("grid grid-cols-1 gap-3 sm:grid-cols-2", className)}>
       {settings.map((setting) => {
         const isSelected = selected.id === setting.id;
-        const SpeedIcon = speedIconMap[setting.speed] || Icons.Clock;
+        const SpeedIcon =
+          speedIconMap[setting.speed as keyof typeof speedIconMap] ||
+          Icons.Clock;
         const speedColor =
-          speedColorMap[setting.speed] || "text-muted-foreground";
+          speedColorMap[setting.speed as keyof typeof speedColorMap] ||
+          "text-muted-foreground";
 
         return (
           <Card

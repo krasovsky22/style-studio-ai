@@ -2,7 +2,7 @@
 
 ## Overview
 
-Week 5 focuses on implementing the core AI generation capabilities of Style Studio AI. This is the most critical phase of the MVP development, as it brings the main value proposition to life - AI-powered clothing visualization using the Replicate API.
+Week 5 focuses on implementing the core AI generation capabilities of Style Studio AI. This is the most critical phase of the MVP development, as it brings the main value proposition to life - AI-powered clothing visualization using OpenAI GPT-4.1 with DALL-E 3 for image generation.
 
 ## Current Context
 
@@ -26,9 +26,9 @@ Week 5 focuses on implementing the core AI generation capabilities of Style Stud
 
 ---
 
-## Phase 1: Replicate API Integration (Days 1-3)
+## Phase 1: OpenAI API Integration (Days 1-3)
 
-### 1.1 Replicate Service Setup (Day 1)
+### 1.1 OpenAI Service Setup (Day 1)
 
 **Priority**: Critical
 **Estimated Time**: 6-8 hours
@@ -37,18 +37,18 @@ Week 5 focuses on implementing the core AI generation capabilities of Style Stud
 
 1. **Environment Configuration**
 
-   - Add Replicate API key to environment variables
-   - Configure API endpoints and model versions
+   - Add OpenAI API key to environment variables
+   - Configure API endpoints and model versions (GPT-4.1, DALL-E 3)
    - Set up rate limiting and quota management
 
 2. **Service Architecture**
 
-   - Create `src/lib/replicate.ts` - Core Replicate client wrapper
+   - Create `src/lib/openai.ts` - Core OpenAI client wrapper
    - Create `src/services/generation.ts` - Generation orchestration service
    - Create `src/lib/prompt-engineering.ts` - Prompt optimization utilities
 
 3. **Model Configuration**
-   - Configure supported AI models (Stable Diffusion XL, Flux, etc.)
+   - Configure OpenAI models (GPT-4.1 for prompt generation, DALL-E 3 for image generation)
    - Define model parameters and constraints
    - Set up model-specific prompt templates
 
@@ -57,50 +57,47 @@ Week 5 focuses on implementing the core AI generation capabilities of Style Stud
 ```
 src/
 ├── lib/
-│   ├── replicate.ts          # Replicate API client
+│   ├── openai.ts             # OpenAI API client
 │   ├── prompt-engineering.ts # Prompt optimization
 │   └── generation-queue.ts   # Queue management
 ├── services/
 │   ├── generation.ts         # Generation orchestration
-│   └── image-processing.ts   # Image preprocessing
+│   ├── image-processing.ts   # Image preprocessing
+│   └── multi-image.ts        # Multiple image handling
 └── types/
     └── generation.ts         # Generation-specific types
 ```
 
 #### Technical Specifications:
 
-**Replicate Client (`src/lib/replicate.ts`)**
+**OpenAI Client (`src/lib/openai.ts`)**
 
 ```typescript
-interface ReplicateConfig {
-  apiToken: string;
-  defaultModel: string;
+interface OpenAIConfig {
+  apiKey: string;
+  baseURL?: string;
   timeoutMs: number;
   retryAttempts: number;
 }
 
 interface GenerationRequest {
-  model: string;
-  input: {
-    image: string;
-    prompt: string;
-    negative_prompt?: string;
-    num_inference_steps?: number;
-    guidance_scale?: number;
-    width?: number;
-    height?: number;
-    seed?: number;
-  };
+  productImages: string[]; // Multiple product images
+  modelImages?: string[]; // Multiple model images (optional)
+  prompt: string;
+  style: "natural" | "vivid";
+  size: "1024x1024" | "1792x1024" | "1024x1792";
+  quality: "standard" | "hd";
+  n?: number;
 }
 
 interface GenerationResponse {
   id: string;
-  status: "starting" | "processing" | "succeeded" | "failed" | "canceled";
-  output?: string[];
-  error?: string;
-  metrics?: {
-    predict_time?: number;
-  };
+  created: number;
+  data: Array<{
+    url?: string;
+    b64_json?: string;
+    revised_prompt?: string;
+  }>;
 }
 ```
 
@@ -108,8 +105,8 @@ interface GenerationResponse {
 
 ```typescript
 interface GenerationOptions {
-  productImageUrl: string;
-  modelImageUrl?: string;
+  productImages: string[]; // Multiple product images
+  modelImages?: string[]; // Multiple model images (optional)
   style: "realistic" | "artistic" | "minimal";
   aspectRatio: "1:1" | "16:9" | "9:16" | "3:2" | "2:3";
   quality: "standard" | "high" | "ultra";
@@ -118,8 +115,9 @@ interface GenerationOptions {
 
 interface GenerationResult {
   success: boolean;
-  replicateId?: string;
+  openaiId?: string;
   resultImageUrl?: string;
+  revisedPrompt?: string;
   processingTime?: number;
   error?: string;
 }
@@ -130,50 +128,72 @@ interface GenerationResult {
 **Priority**: Critical
 **Estimated Time**: 8-10 hours
 
-#### Prompt Templates
+#### Multi-Image Prompt Templates
 
-1. **Base Prompt Structure**
+1. **Base Prompt Structure for Multiple Images**
 
    ```
-   "A {product_description} worn by a {model_description} in a {setting},
-   {style_modifiers}, professional fashion photography, {quality_modifiers}"
+   "Generate an image showing {model_description} wearing {product_description}.
+   The model should be positioned {pose_description} in a {setting_description}.
+   Style: {style_modifiers}. Quality: {quality_modifiers}.
+
+   Product reference: Use the uploaded product images to accurately represent the clothing item's design, color, texture, and fit.
+   Model reference: Use the uploaded model images to maintain consistent pose, body type, and styling preferences."
    ```
 
-2. **Style Variations**
+2. **Multi-Image Integration Prompts**
 
-   - **Realistic**: "photorealistic, studio lighting, commercial photography"
-   - **Artistic**: "artistic style, creative lighting, fashion editorial"
-   - **Minimal**: "clean background, minimal styling, product focus"
+   - **Multiple Product Images**: "Combine design elements from all product images to create a cohesive look"
+   - **Multiple Model Images**: "Maintain consistency with the model's pose and styling across reference images"
+   - **Product + Model Images**: "Show the model from the reference images wearing the product from the product images"
 
-3. **Quality Modifiers**
-   - **Standard**: "good quality, clear details"
-   - **High**: "high resolution, sharp details, professional quality"
-   - **Ultra**: "ultra high quality, 8k resolution, award-winning photography"
+3. **Style Variations**
 
-#### Prompt Engineering Features:
+   - **Realistic**: "photorealistic fashion photography, studio lighting, commercial quality, detailed fabric textures"
+   - **Artistic**: "artistic fashion editorial, creative lighting, artistic composition, fashion magazine style"
+   - **Minimal**: "clean minimalist background, focused product showcase, simple elegant presentation"
 
-1. **Automated Product Analysis**
+4. **Quality Modifiers**
+   - **Standard**: "good quality, clear details, well-lit"
+   - **High**: "high resolution, sharp details, professional photography quality"
+   - **Ultra**: "ultra high quality, 8k resolution, award-winning fashion photography"
 
-   - Detect clothing type from product image
-   - Extract colors and patterns
-   - Identify clothing category (shirt, dress, pants, etc.)
+#### Advanced Prompt Engineering Features:
 
-2. **Model Integration**
+1. **Multi-Image Analysis System**
 
-   - Use uploaded model image for pose reference
-   - Extract model characteristics (if provided)
-   - Generate appropriate model descriptions
+   - **Product Image Analysis**:
 
-3. **Negative Prompts**
-   - Remove unwanted elements
-   - Improve image quality
-   - Prevent common AI artifacts
+     - Detect clothing type, colors, patterns, and style from multiple product angles
+     - Extract design details (buttons, zippers, prints, textures)
+     - Identify clothing category and subcategory
+     - Analyze fit and silhouette from different product views
+
+   - **Model Image Analysis**:
+     - Extract pose information from multiple model reference images
+     - Detect body type, styling preferences, and aesthetic
+     - Analyze lighting and composition preferences
+     - Maintain consistency across multiple reference poses
+
+2. **Intelligent Prompt Composition**
+
+   - **GPT-4.1 Integration**: Use GPT-4.1 to analyze uploaded images and generate optimized prompts
+   - **Context Awareness**: Consider relationships between multiple product and model images
+   - **Style Consistency**: Ensure coherent style when combining multiple reference images
+   - **Adaptive Prompting**: Adjust prompts based on image quality and content analysis
+
+3. **Negative Prompts for Quality Control**
+   - Remove unwanted elements and artifacts
+   - Prevent common AI generation issues
+   - Maintain clothing authenticity and realism
+   - Ensure appropriate model representation
 
 #### Implementation Files:
 
-- `src/lib/prompt-engineering.ts` - Core prompt generation
-- `src/lib/image-analysis.ts` - Basic image analysis utilities
-- `src/constants/prompts.ts` - Prompt templates and variations
+- `src/lib/prompt-engineering.ts` - Core prompt generation with multi-image support
+- `src/lib/image-analysis.ts` - Advanced image analysis using GPT-4.1 Vision
+- `src/constants/prompts.ts` - Prompt templates and variations for multiple images
+- `src/services/multi-image.ts` - Multi-image handling and coordination
 
 ### 1.3 Generation Queue System (Day 2-3)
 
@@ -206,19 +226,21 @@ graph TD
     A[User Submits Generation] --> B[Validate Token Balance]
     B --> C[Deduct Tokens]
     C --> D[Create Generation Record]
-    D --> E[Add to Processing Queue]
-    E --> F[Send to Replicate API]
-    F --> G[Poll for Completion]
-    G --> H{Success?}
-    H -->|Yes| I[Upload to Cloudinary]
-    H -->|No| J[Retry Logic]
-    I --> K[Update Database]
-    J --> L{Max Retries?}
-    L -->|No| F
-    L -->|Yes| M[Mark as Failed]
-    M --> N[Refund Tokens]
-    K --> O[Notify User]
-    N --> O
+    D --> E[Process Multiple Images]
+    E --> F[Analyze Product Images with GPT-4.1]
+    F --> G[Analyze Model Images with GPT-4.1]
+    G --> H[Generate Optimized Prompt]
+    H --> I[Send to DALL-E 3]
+    I --> J{Success?}
+    J -->|Yes| K[Upload to Cloudinary]
+    J -->|No| L[Retry Logic]
+    K --> M[Update Database]
+    L --> N{Max Retries?}
+    N -->|No| I
+    N -->|Yes| O[Mark as Failed]
+    O --> P[Refund Tokens]
+    M --> Q[Notify User]
+    P --> Q
 ```
 
 ---
@@ -232,19 +254,21 @@ graph TD
 
 #### Form Features
 
-1. **Image Upload Integration**
+1. **Multi-Image Upload Integration**
 
-   - Product image upload (required)
-   - Model image upload (optional)
-   - Image preview with editing options
-   - Validation and error handling
+   - Product images upload (required) - support multiple files
+   - Model images upload (optional) - support multiple files
+   - Image preview with editing options for each uploaded file
+   - Drag-and-drop interface for multiple file selection
+   - Individual file validation and error handling
+   - Image reordering and deletion capabilities
 
 2. **Generation Parameters**
 
-   - AI model selection dropdown
+   - OpenAI model selection (GPT-4.1 + DALL-E 3)
    - Style preset selection (realistic, artistic, minimal)
    - Aspect ratio options
-   - Quality settings
+   - Quality settings (standard, high)
    - Custom prompt input (optional)
 
 3. **Token Integration**
@@ -269,9 +293,11 @@ src/components/generation/
 
 ```typescript
 const generationFormSchema = z.object({
-  productImage: z.string().url("Product image is required"),
-  modelImage: z.string().url().optional(),
-  model: z.enum(["stable-diffusion-xl", "flux-dev", "stable-diffusion-3"]),
+  productImages: z
+    .array(z.string().url("Product image is required"))
+    .min(1, "At least one product image is required"),
+  modelImages: z.array(z.string().url()).optional(),
+  model: z.enum(["gpt-4.1-dalle-3"]),
   style: z.enum(["realistic", "artistic", "minimal"]),
   aspectRatio: z.enum(["1:1", "16:9", "9:16", "3:2", "2:3"]),
   quality: z.enum(["standard", "high", "ultra"]),
@@ -439,7 +465,7 @@ const GenerationHistory = () => {
 
 1. **API Errors**
 
-   - Replicate API failures
+   - OpenAI API failures
    - Rate limit exceeded
    - Invalid parameters
    - Network timeouts
@@ -512,8 +538,9 @@ src/app/api/
 │   ├── status/route.ts       # Check generation status
 │   ├── cancel/route.ts       # Cancel generation
 │   └── retry/route.ts        # Retry failed generation
-├── replicate/
-│   ├── webhook/route.ts      # Replicate webhooks
+├── openai/
+│   ├── analyze/route.ts      # Image analysis with GPT-4.1 Vision
+│   ├── generate/route.ts     # DALL-E 3 generation
 │   └── models/route.ts       # Available models
 └── images/
     ├── upload/route.ts       # Image upload handler
@@ -530,19 +557,20 @@ export const processGenerationQueue = action({
   args: {},
   handler: async (ctx) => {
     // Process pending generations
-    // Call Replicate API
+    // Call OpenAI GPT-4.1 Vision API for image analysis
+    // Call OpenAI DALL-E 3 for image generation
     // Update generation status
   },
 });
 
-export const updateFromReplicate = mutation({
+export const updateFromOpenAI = mutation({
   args: {
-    replicateId: v.string(),
+    openaiId: v.string(),
     status: v.string(),
     output: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    // Update generation from Replicate webhook
+    // Update generation from OpenAI API response
   },
 });
 ```
@@ -665,7 +693,7 @@ export const updateFromReplicate = mutation({
    - Track user behavior and conversion metrics
 
 2. **AI Service Monitoring**
-   - Monitor Replicate API usage and quotas
+   - Monitor OpenAI API usage and quotas
    - Track generation success/failure rates
    - Monitor model performance and reliability
 
@@ -675,7 +703,7 @@ export const updateFromReplicate = mutation({
 
 ### Technical Risks
 
-1. **Replicate API Reliability**
+1. **OpenAI API Reliability**
 
    - **Risk**: API downtime or failures
    - **Mitigation**: Implement robust retry logic, queue management, and user notifications
@@ -686,7 +714,7 @@ export const updateFromReplicate = mutation({
    - **Mitigation**: Set realistic expectations, provide progress updates, implement caching
 
 3. **Resource Limits**
-   - **Risk**: Hitting Replicate API quotas or rate limits
+   - **Risk**: Hitting OpenAI API quotas or rate limits
    - **Mitigation**: Implement queue management, user quotas, and upgraded API plans
 
 ### Business Risks
@@ -734,7 +762,7 @@ export const updateFromReplicate = mutation({
 
 ### Core Components
 
-1. **Replicate Integration Service**
+1. **OpenAI Integration Service**
 
    - Complete API client wrapper
    - Prompt engineering system
@@ -783,11 +811,11 @@ export const updateFromReplicate = mutation({
 
 ### External Services
 
-1. **Replicate API Account**
+1. **OpenAI API Account**
 
    - API key and authentication
-   - Model access and quotas
-   - Webhook configuration
+   - Model access and quotas (GPT-4.1, DALL-E 3)
+   - Usage monitoring configuration
 
 2. **Cloudinary Integration**
    - Storage for generated images
@@ -847,7 +875,7 @@ The modular architecture ensures that the system can be easily extended in futur
 
 **Key Success Factors:**
 
-- Robust Replicate API integration with proper error handling
+- Robust OpenAI API integration with proper error handling
 - Intuitive user interface with clear feedback mechanisms
 - Real-time status updates providing transparency to users
 - Comprehensive testing ensuring reliability and performance

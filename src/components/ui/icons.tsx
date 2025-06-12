@@ -23,6 +23,8 @@ import {
   Brain,
   Timer,
   Hourglass,
+  Camera,
+  Palette,
 } from "lucide-react";
 import { SVGProps } from "react";
 
@@ -51,6 +53,8 @@ export const Icons = {
   brain: Brain,
   timer: Timer,
   hourglass: Hourglass,
+  camera: Camera,
+  palette: Palette,
   loader2: Loader2,
 
   // Capitalized versions for consistency
@@ -77,6 +81,8 @@ export const Icons = {
   Brain,
   Timer,
   Hourglass,
+  Camera,
+  Palette,
 
   google: (props: SVGProps<SVGSVGElement>) => (
     <svg role="img" viewBox="0 0 24 24" {...props}>

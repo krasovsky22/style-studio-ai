@@ -13,23 +13,6 @@ export interface User {
   freeTokensGranted: number;
 }
 
-export interface Generation {
-  id: string;
-  userId: string;
-  status: GenerationStatus;
-  createdAt: Date;
-  completedAt?: Date;
-  productImageUrl: string;
-  modelImageUrl?: string;
-  resultImageUrl?: string;
-  prompt?: string;
-  parameters: GenerationParameters;
-  processingTime?: number;
-  tokensUsed: number;
-  error?: string;
-  retryCount: number;
-}
-
 export interface TokenPurchase {
   id: string;
   userId: string;
@@ -57,26 +40,11 @@ export interface Usage {
   sessionId?: string;
 }
 
-export type GenerationStatus =
-  | "pending"
-  | "processing"
-  | "completed"
-  | "failed"
-  | "cancelled";
-
 export type TokenPurchaseStatus =
   | "pending"
   | "completed"
   | "failed"
   | "refunded";
-
-export interface GenerationParameters {
-  model: string;
-  style?: string;
-  quality?: string;
-  aspectRatio?: string;
-  seed?: number;
-}
 
 export interface TokenPackage {
   name: string;
