@@ -34,16 +34,13 @@ import {
   QualitySetting,
   StylePreset,
 } from "@/types/generation";
-import {
-  AI_MODELS,
-  QUALITY_SETTINGS,
-  STYLE_PRESETS,
-} from "@/constants/prompts";
+import { QUALITY_SETTINGS, STYLE_PRESETS } from "@/constants/prompts";
 
 import { ImageUpload } from "./image-upload";
 import { ModelSelector } from "./model-selector";
 import { QualitySettings } from "./quality-settings";
 import { StylePresets } from "./style-presets";
+import { AI_MODELS, DEFAULT_AI_MODEL } from "@/constants/replicate";
 
 // Simple client-side form data interface for basic validation
 interface GenerationFormData {
@@ -76,7 +73,9 @@ export function GenerationForm({
   className,
 }: GenerationFormProps) {
   const [activeTab, setActiveTab] = useState("images");
-  const [selectedModel, setSelectedModel] = useState<AIModel>(AI_MODELS[0]);
+  const [selectedModel, setSelectedModel] = useState<AIModel>(
+    AI_MODELS[DEFAULT_AI_MODEL]
+  );
   const [selectedStyle, setSelectedStyle] = useState<StylePreset>(
     STYLE_PRESETS[0]
   );
@@ -96,7 +95,7 @@ export function GenerationForm({
       style: "casual",
       quality: "standard",
       aspectRatio: "3:4",
-      model: "stable-diffusion-xl",
+      model: AI_MODELS[DEFAULT_AI_MODEL].id,
       parameters: {
         guidance_scale: 7.5,
         num_inference_steps: 50,
@@ -388,7 +387,6 @@ export function GenerationForm({
               </CardHeader>
               <CardContent>
                 <ModelSelector
-                  models={AI_MODELS}
                   selected={selectedModel}
                   onSelect={(model: AIModel) => {
                     setSelectedModel(model);

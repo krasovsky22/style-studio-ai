@@ -1,6 +1,6 @@
 // Prompt templates and constants
 
-import { AIModel, StylePreset, QualitySetting } from "@/types/generation";
+import { StylePreset, QualitySetting } from "@/types/generation";
 
 // Style presets for the generation form
 export const STYLE_PRESETS: StylePreset[] = [
@@ -76,34 +76,6 @@ export const QUALITY_SETTINGS: QualitySetting[] = [
     description: "Maximum quality",
     cost: 5,
     speed: "Very Slow",
-  },
-];
-
-// AI models available for generation
-export const AI_MODELS: AIModel[] = [
-  {
-    id: "stable-diffusion-xl",
-    name: "Stable Diffusion XL",
-    description: "High quality, versatile model",
-    replicateModel: "stability-ai/stable-diffusion-xl-base-1.0",
-    cost: 1,
-    supported_features: ["text-to-image", "image-to-image"],
-  },
-  {
-    id: "stable-diffusion-3",
-    name: "Stable Diffusion 3",
-    description: "Latest model with improved quality",
-    replicateModel: "stability-ai/stable-diffusion-3",
-    cost: 2,
-    supported_features: ["text-to-image", "image-to-image"],
-  },
-  {
-    id: "flux-dev",
-    name: "Flux Dev",
-    description: "Fast generation with good quality",
-    replicateModel: "black-forest-labs/flux-dev",
-    cost: 1,
-    supported_features: ["text-to-image"],
   },
 ];
 

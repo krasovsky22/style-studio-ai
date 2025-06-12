@@ -103,7 +103,7 @@ export default function GeneratePage() {
             toast.error(errorData.error || "Generation failed");
         }
 
-        throw new Error(errorData.error || "Generation failed");
+        return;
       }
 
       const generation = await response.json();

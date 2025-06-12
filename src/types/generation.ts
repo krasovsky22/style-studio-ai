@@ -1,5 +1,7 @@
 // Generation-specific types for AI integration
 
+import { AI_MODELS } from "@/constants/replicate";
+
 export interface ReplicateConfig {
   apiToken: string;
   defaultModel: string;
@@ -43,7 +45,7 @@ export interface GenerationOptions {
     | "minimalist";
   aspectRatio: "1:1" | "3:4" | "4:3" | "16:9";
   quality: "draft" | "standard" | "high" | "ultra";
-  model: "stable-diffusion-xl" | "stable-diffusion-3" | "flux-dev";
+  model: keyof typeof AI_MODELS; // Assuming AI_MODELS is an object mapping model IDs to AIModel
   customPrompt?: string;
   parameters?: {
     guidance_scale: number;

@@ -1,31 +1,6 @@
 // Application constants
 export const USER_INITIAL_FREE_TOKENS = 10;
 
-// Generation models and their configurations
-export const AI_MODELS = {
-  "stable-diffusion-xl": {
-    name: "Stable Diffusion XL",
-    description: "High-quality image generation with excellent detail",
-    supportedAspectRatios: ["1:1", "16:9", "9:16", "3:2", "2:3"],
-    maxResolution: "1024x1024",
-    estimatedTime: "30-60 seconds",
-  },
-  "stable-diffusion-3": {
-    name: "Stable Diffusion 3",
-    description: "Latest model with improved prompt adherence",
-    supportedAspectRatios: ["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4"],
-    maxResolution: "1344x768",
-    estimatedTime: "45-90 seconds",
-  },
-  "flux-dev": {
-    name: "Flux Dev",
-    description: "Fast generation with good quality",
-    supportedAspectRatios: ["1:1", "16:9", "9:16"],
-    maxResolution: "1024x1024",
-    estimatedTime: "15-30 seconds",
-  },
-} as const;
-
 // Style presets for generation
 export const STYLE_PRESETS = {
   realistic: {

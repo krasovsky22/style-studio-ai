@@ -76,6 +76,8 @@ export class GenerationService {
       // Start generation with Replicate
       const replicateResponse = await replicateClient.createPrediction(request);
 
+      console.log("replicate response:", replicateResponse);
+
       if (!replicateResponse.id) {
         throw new Error(
           "Failed to start generation: No prediction ID received"
