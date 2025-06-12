@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { STYLE_PRESETS_IDS } from "@/constants/prompts";
+import { AI_MODELS } from "@/constants/openai";
 
 // Authentication schemas
 export const loginSchema = z.object({
@@ -47,7 +49,7 @@ export const generationSchema = z.object({
     .string()
     .max(500, "Custom prompt too long (max 500 characters)")
     .optional(),
-  style: z.enum(["realistic", "artistic", "minimal"], {
+  style: z.enum(STYLE_PRESETS_IDS as [string, ...string[]], {
     errorMap: () => ({ message: "Please select a valid style preset" }),
   }),
   quality: z.enum(["standard", "high", "ultra"], {
@@ -56,7 +58,7 @@ export const generationSchema = z.object({
   aspectRatio: z.enum(["1:1", "16:9", "9:16", "3:2", "2:3"], {
     errorMap: () => ({ message: "Please select a valid aspect ratio" }),
   }),
-  model: z.enum(["gpt-4.1-dalle-3"], {
+  model: z.enum(Object.keys(AI_MODELS) as [string, ...string[]], {
     errorMap: () => ({ message: "Please select a valid AI model" }),
   }),
   parameters: z
@@ -81,35 +83,6 @@ export const generationSchema = z.object({
         .min(0, "Seed must be a positive number")
         .max(2147483647, "Seed must be a valid 32-bit integer")
         .optional(),
-    })
-    .optional(),
-});
-
-// Legacy single image schema for backward compatibility
-export const legacyGenerationSchema = z.object({
-  productImageUrl: z
-    .string()
-    .min(1, "Product image is required")
-    .url("Please upload a valid product image"),
-  modelImageUrl: z
-    .string()
-    .url("Please upload a valid model image")
-    .optional()
-    .or(z.literal("")),
-  prompt: z
-    .string()
-    .max(500, "Custom prompt too long (max 500 characters)")
-    .optional(),
-  style: z.enum(["realistic", "artistic", "minimal"]),
-  quality: z.enum(["standard", "high", "ultra"]),
-  aspectRatio: z.enum(["1:1", "16:9", "9:16", "3:2", "2:3"]),
-  model: z.enum(["gpt-4.1-dalle-3"]),
-  parameters: z
-    .object({
-      guidance_scale: z.number().min(1).max(20).default(7.5),
-      num_inference_steps: z.number().min(20).max(100).default(50),
-      strength: z.number().min(0.1).max(1.0).default(0.8),
-      seed: z.number().min(0).max(2147483647).optional(),
     })
     .optional(),
 });

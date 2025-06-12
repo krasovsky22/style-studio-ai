@@ -30,5 +30,6 @@
   "emmet.includeLanguages": {
     "typescript": "typescriptreact",
     "javascript": "javascriptreact"
-  }
+  },
+  "cSpell.words": ["Retryable"]
 }

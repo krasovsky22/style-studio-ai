@@ -5,6 +5,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { z } from "zod";
+import { API_ERROR_CODES } from "@/constants/api-errors";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -18,7 +19,14 @@ export async function PATCH(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized",
+          code: API_ERROR_CODES.AUTHENTICATION_REQUIRED,
+        },
+        { status: 401 }
+      );
     }
 
     const body = await request.json();
@@ -35,7 +43,11 @@ export async function PATCH(request: NextRequest) {
 
     if (!updatedUser) {
       return NextResponse.json(
-        { error: "Failed to update user profile" },
+        {
+          success: false,
+          error: "Failed to update user profile",
+          code: API_ERROR_CODES.SERVER_ERROR,
+        },
         { status: 500 }
       );
     }

@@ -37,10 +37,20 @@ export default defineSchema({
     createdAt: v.number(),
     completedAt: v.optional(v.number()),
 
-    // Images
-    productImages: v.array(v.id("files")), // Array of product image URLs
-    modelImages: v.array(v.id("files")),
-    resultImages: v.array(v.id("files")),
+    // Backward compatibility fields (single images)
+    productImageUrl: v.optional(v.string()),
+    modelImageUrl: v.optional(v.string()),
+    resultImageUrl: v.optional(v.string()),
+
+    // Enhanced multiple image support
+    productImages: v.optional(v.array(v.string())), // Array of Cloudinary URLs
+    modelImages: v.optional(v.array(v.string())), // Array of Cloudinary URLs
+    resultImages: v.optional(v.array(v.string())), // Array of generated image URLs
+
+    // Legacy file ID arrays (for existing generations)
+    productImageFiles: v.optional(v.array(v.id("files"))),
+    modelImageFiles: v.optional(v.array(v.id("files"))),
+    resultImageFiles: v.optional(v.array(v.id("files"))),
 
     // Generation parameters
     prompt: v.string(),
@@ -48,7 +58,10 @@ export default defineSchema({
       model: v.string(),
       style: v.optional(v.string()),
       quality: v.optional(v.string()),
+      strength: v.optional(v.number()),
       aspectRatio: v.optional(v.string()),
+      guidance_scale: v.optional(v.number()),
+      num_inference_steps: v.optional(v.number()),
       seed: v.optional(v.number()),
     }),
 

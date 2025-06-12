@@ -410,6 +410,71 @@ export const startGeneration = mutation({
   },
 });
 
+// Enhanced generation creation function with full image support and token validation
+export const createEnhancedGeneration = mutation({
+  args: {
+    userId: v.id("users"),
+    productImages: v.array(v.string()), // Cloudinary URLs
+    modelImages: v.optional(v.array(v.string())), // Cloudinary URLs
+    prompt: v.string(),
+    parameters: v.object({
+      model: v.string(),
+      style: v.optional(v.string()),
+      quality: v.optional(v.string()),
+      strength: v.optional(v.number()),
+      aspectRatio: v.optional(v.string()),
+      guidance_scale: v.optional(v.number()),
+      num_inference_steps: v.optional(v.number()),
+      seed: v.optional(v.number()),
+    }),
+    tokensUsed: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Validate user exists and has sufficient tokens
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    if (user.tokenBalance < args.tokensUsed) {
+      throw new Error("Insufficient token balance");
+    }
+
+    // Deduct tokens from user balance (optimistic deduction)
+    await ctx.db.patch(args.userId, {
+      tokenBalance: user.tokenBalance - args.tokensUsed,
+      totalTokensUsed: (user.totalTokensUsed || 0) + args.tokensUsed,
+    });
+
+    // Create generation record
+    const generationId = await ctx.db.insert("generations", {
+      userId: args.userId,
+      status: "pending",
+      productImages: args.productImages,
+      modelImages: args.modelImages,
+      prompt: args.prompt,
+      parameters: args.parameters,
+      tokensUsed: args.tokensUsed,
+      retryCount: 0,
+      createdAt: Date.now(),
+    });
+
+    // Log user action with metadata matching the usage schema
+    await ctx.db.insert("usage", {
+      userId: args.userId,
+      action: "generation_started",
+      timestamp: Date.now(),
+      metadata: {
+        generationId,
+        tokensUsed: args.tokensUsed,
+        modelUsed: args.parameters.model,
+      },
+    });
+
+    return generationId;
+  },
+});
+
 // Real-time subscription for generation status
 export const subscribeToGeneration = query({
   args: { generationId: v.id("generations") },
@@ -626,7 +691,7 @@ export const retryGeneration = mutation({
   },
 });
 
-// Helper function to get generation with populated file details
+// Helper function to get generation with image URLs (new approach using Cloudinary URLs)
 export const getGenerationWithFiles = query({
   args: { generationId: v.id("generations") },
   handler: async (ctx, args) => {
@@ -635,39 +700,19 @@ export const getGenerationWithFiles = query({
       return null;
     }
 
-    // Get file details for all images
-    const productImages = await Promise.all(
-      generation.productImages.map(async (fileId) => {
-        const file = await ctx.db.get(fileId);
-        return file
-          ? { ...file, url: await ctx.storage.getUrl(file.storageId) }
-          : null;
-      })
-    );
-
-    const modelImages = await Promise.all(
-      generation.modelImages.map(async (fileId) => {
-        const file = await ctx.db.get(fileId);
-        return file
-          ? { ...file, url: await ctx.storage.getUrl(file.storageId) }
-          : null;
-      })
-    );
-
-    const resultImages = await Promise.all(
-      generation.resultImages.map(async (fileId) => {
-        const file = await ctx.db.get(fileId);
-        return file
-          ? { ...file, url: await ctx.storage.getUrl(file.storageId) }
-          : null;
-      })
-    );
-
+    // For the new approach, images are stored as Cloudinary URLs directly
+    // No need to fetch file records or storage URLs
     return {
       ...generation,
-      productImagesWithUrls: productImages.filter(Boolean),
-      modelImagesWithUrls: modelImages.filter(Boolean),
-      resultImagesWithUrls: resultImages.filter(Boolean),
+      productImagesWithUrls: (generation.productImages || []).map((url) => ({
+        url,
+      })),
+      modelImagesWithUrls: (generation.modelImages || []).map((url) => ({
+        url,
+      })),
+      resultImagesWithUrls: (generation.resultImages || []).map((url) => ({
+        url,
+      })),
     };
   },
 });
@@ -705,54 +750,29 @@ export const getUserGenerationsWithFiles = query({
     const limit = args.limit || 20;
     const generations = await query.take(limit);
 
-    // Get file details for each generation
-    const generationsWithFiles = await Promise.all(
-      generations.map(async (generation) => {
-        const productImages = await Promise.all(
-          generation.productImages.map(async (fileId) => {
-            const file = await ctx.db.get(fileId);
-            return file
-              ? { ...file, url: await ctx.storage.getUrl(file.storageId) }
-              : null;
-          })
-        );
-
-        const modelImages = await Promise.all(
-          generation.modelImages.map(async (fileId) => {
-            const file = await ctx.db.get(fileId);
-            return file
-              ? { ...file, url: await ctx.storage.getUrl(file.storageId) }
-              : null;
-          })
-        );
-
-        const resultImages = await Promise.all(
-          generation.resultImages.map(async (fileId) => {
-            const file = await ctx.db.get(fileId);
-            return file
-              ? { ...file, url: await ctx.storage.getUrl(file.storageId) }
-              : null;
-          })
-        );
-
-        return {
-          ...generation,
-          productImagesWithUrls: productImages.filter(Boolean),
-          modelImagesWithUrls: modelImages.filter(Boolean),
-          resultImagesWithUrls: resultImages.filter(Boolean),
-        };
-      })
-    );
+    // For the new approach, images are stored as Cloudinary URLs directly
+    const generationsWithFiles = generations.map((generation) => ({
+      ...generation,
+      productImagesWithUrls: (generation.productImages || []).map((url) => ({
+        url,
+      })),
+      modelImagesWithUrls: (generation.modelImages || []).map((url) => ({
+        url,
+      })),
+      resultImagesWithUrls: (generation.resultImages || []).map((url) => ({
+        url,
+      })),
+    }));
 
     return generationsWithFiles;
   },
 });
 
-// Helper function to add result images to a generation
+// Helper function to add result images to a generation (using Cloudinary URLs)
 export const addResultImages = mutation({
   args: {
     generationId: v.id("generations"),
-    resultImageIds: v.array(v.id("files")),
+    resultImageUrls: v.array(v.string()), // Changed from file IDs to URLs
   },
   handler: async (ctx, args) => {
     const generation = await ctx.db.get(args.generationId);
@@ -762,8 +782,8 @@ export const addResultImages = mutation({
 
     // Add new result images to the existing array
     const updatedResultImages = [
-      ...generation.resultImages,
-      ...args.resultImageIds,
+      ...(generation.resultImages || []),
+      ...args.resultImageUrls,
     ];
 
     await ctx.db.patch(args.generationId, {
@@ -774,35 +794,16 @@ export const addResultImages = mutation({
   },
 });
 
-// Helper function to create file record and add to generation
-export const createFileAndAddToGeneration = mutation({
+// Helper function to add image URL to generation (new approach)
+export const addImageUrlToGeneration = mutation({
   args: {
     generationId: v.id("generations"),
     userId: v.id("users"),
-    filename: v.string(),
-    contentType: v.string(),
-    size: v.number(),
-    storageId: v.string(),
-    category: v.union(
-      v.literal("product_image"),
-      v.literal("model_image"),
-      v.literal("generated_image"),
-      v.literal("profile_image")
-    ),
+    imageUrl: v.string(), // Cloudinary URL
     imageType: v.union(
       v.literal("product"),
       v.literal("model"),
       v.literal("result")
-    ),
-    metadata: v.optional(
-      v.object({
-        width: v.optional(v.number()),
-        height: v.optional(v.number()),
-        format: v.optional(v.string()),
-        originalUrl: v.optional(v.string()),
-        isPrimary: v.optional(v.boolean()),
-        imageOrder: v.optional(v.number()),
-      })
     ),
   },
   handler: async (ctx, args) => {
@@ -812,52 +813,35 @@ export const createFileAndAddToGeneration = mutation({
     }
 
     if (generation.userId !== args.userId) {
-      throw new Error(
-        "Unauthorized: Cannot add files to another user's generation"
-      );
+      throw new Error("Unauthorized: Cannot modify another user's generation");
     }
 
-    // Create file record
-    const fileId = await ctx.db.insert("files", {
-      userId: args.userId,
-      filename: args.filename,
-      contentType: args.contentType,
-      size: args.size,
-      storageId: args.storageId,
-      uploadedAt: Date.now(),
-      category: args.category,
-      metadata: {
-        ...args.metadata,
-        generationId: args.generationId,
-      },
-    });
-
-    // Add file to appropriate image array in generation
+    // Add URL to appropriate image array in generation
     let updateField: string;
     let currentImages: string[];
 
     switch (args.imageType) {
       case "product":
         updateField = "productImages";
-        currentImages = generation.productImages;
+        currentImages = generation.productImages || [];
         break;
       case "model":
         updateField = "modelImages";
-        currentImages = generation.modelImages;
+        currentImages = generation.modelImages || [];
         break;
       case "result":
         updateField = "resultImages";
-        currentImages = generation.resultImages;
+        currentImages = generation.resultImages || [];
         break;
       default:
         throw new Error("Invalid image type");
     }
 
-    const updatedImages = [...currentImages, fileId];
+    const updatedImages = [...currentImages, args.imageUrl];
     await ctx.db.patch(args.generationId, {
       [updateField]: updatedImages,
     });
 
-    return { fileId, success: true };
+    return { success: true, imageUrl: args.imageUrl };
   },
 });

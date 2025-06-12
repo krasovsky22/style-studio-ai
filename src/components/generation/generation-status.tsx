@@ -18,49 +18,51 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
 import Image from "next/image";
-
-type GenerationStatus =
-  | "pending"
-  | "processing"
-  | "completed"
-  | "failed"
-  | "cancelled";
+import { GenerationStatus, Generation } from "@/convex/types";
 
 // Type for the generation object returned from Convex
-type ConvexGeneration = {
-  _id: Id<"generations">;
-  _creationTime: number;
-  userId: Id<"users">;
-  status: GenerationStatus;
-  productImageUrl: string;
-  modelImageUrl?: string;
-  resultImageUrl?: string;
-  prompt: string;
-  parameters: {
-    model: string;
-    style?: string;
-    quality?: string;
-    aspectRatio?: string;
-    seed?: number;
-  };
-  tokensUsed: number;
-  processingTime?: number;
-  completedAt?: number;
-  error?: string;
-  retryCount: number;
-  replicateId?: string;
-  cloudinaryPublicId?: string;
-  createdAt: number;
-};
+// type ConvexGeneration = {
+//   _id: Id<"generations">;
+//   _creationTime: number;
+//   userId: Id<"users">;
+//   status: GenerationStatus;
+//   productImageUrl: string;
+//   modelImageUrl?: string;
+//   resultImageUrl?: string;
+//   prompt: string;
+//   parameters: {
+//     model: string;
+//     style?: string;
+//     quality?: string;
+//     aspectRatio?: string;
+//     seed?: number;
+//   };
+//   tokensUsed: number;
+//   processingTime?: number;
+//   completedAt?: number;
+//   error?: string;
+//   retryCount: number;
+//   replicateId?: string;
+//   cloudinaryPublicId?: string;
+//   createdAt: number;
+// };
 
 interface GenerationStatusDisplayProps {
   generationId: Id<"generations">;
-  onComplete?: (generation: ConvexGeneration) => void;
+  onComplete?: (generation: Generation) => void;
   onError?: (error: string) => void;
   className?: string;
 }
 
-const statusConfig = {
+interface StatusConfigType {
+  label: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  progress: number;
+}
+
+const statusConfig: Record<GenerationStatus, StatusConfigType> = {
   pending: {
     label: "Pending",
     description: "Waiting to start generation...",

@@ -22,17 +22,20 @@ import { GenerationOptions } from "@/types/generation";
 import { toast } from "sonner";
 import { useConvexAuth } from "@/hooks/use-convex-auth";
 
+interface ResponseErrorType {
+  message?: string;
+  code?: string;
+  details?: string;
+  validationErrors?: { field: string; message: string }[];
+}
+
 export default function GeneratePage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [currentGeneration, setCurrentGeneration] =
     useState<Id<"generations"> | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [lastError, setLastError] = useState<{
-    message: string;
-    code?: string;
-    details?: string;
-  } | null>(null);
+  const [lastError, setLastError] = useState<ResponseErrorType | null>(null);
   const [lastGenerationOptions, setLastGenerationOptions] =
     useState<GenerationOptions | null>(null);
 
@@ -54,72 +57,102 @@ export default function GeneratePage() {
     setIsGenerating(true);
 
     try {
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(options),
+        signal: controller.signal,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        const errorInfo = {
-          message: errorData.error || "Generation failed",
-          code: errorData.code,
-          details: errorData.details,
+      clearTimeout(timeoutId);
+
+      let responseData;
+      try {
+        responseData = await response.json();
+      } catch (jsonError) {
+        // Handle cases where the response is not valid JSON
+        console.error("Failed to parse response as JSON:", jsonError);
+        const errorInfo: ResponseErrorType = {
+          message: `Server returned invalid response (${response.status}: ${response.statusText})`,
+          code: "INVALID_RESPONSE",
+          details: `Response status: ${response.status}`,
+        };
+        setLastError(errorInfo);
+        toast.error("Server error. Please try again later.");
+        return;
+      }
+
+      // Check if the API response indicates an error
+      if (!response.ok || !responseData.success) {
+        const errorInfo: ResponseErrorType = {
+          code: responseData.code,
+          validationErrors: responseData.validationErrors,
         };
 
+        console.log("setting last error", errorInfo);
         setLastError(errorInfo);
-
-        // Show specific error messages based on error codes
-        switch (errorData.code) {
-          case "INSUFFICIENT_TOKENS":
-            toast.error(
-              "Insufficient tokens. Please purchase more tokens to continue."
-            );
-            break;
-          case "RATE_LIMIT_EXCEEDED":
-            toast.error(
-              "Rate limit exceeded. Please wait a moment before trying again."
-            );
-            break;
-          case "VALIDATION_ERROR":
-            toast.error(
-              "Invalid generation settings. Please check your inputs."
-            );
-            break;
-          case "IMAGE_VALIDATION_ERROR":
-            toast.error(
-              "Image validation failed. Please check your uploaded images."
-            );
-            break;
-          case "MODEL_ERROR":
-            toast.error(
-              "AI model configuration error. Please try a different model."
-            );
-            break;
-          default:
-            toast.error(errorData.error || "Generation failed");
-        }
 
         return;
       }
 
-      const generation = await response.json();
-      setCurrentGeneration(generation._id);
+      // Success case
+      setCurrentGeneration(responseData.data._id);
       setLastError(null); // Clear any previous errors on success
       toast.success("Generation started!");
     } catch (error) {
       console.error("Generation failed:", error);
 
-      // If we haven't already set a detailed error, set a generic one
-      if (!lastError) {
-        setLastError({
-          message: error instanceof Error ? error.message : "Generation failed",
+      // Handle specific error types
+      let errorInfo;
+      let userMessage;
+
+      if (error instanceof Error && error.name === "AbortError") {
+        errorInfo = {
+          message: "Request timed out after 30 seconds",
+          code: "TIMEOUT_ERROR",
+        };
+        userMessage = "Request timed out. Please try again.";
+      } else if (
+        error instanceof TypeError &&
+        error.message.includes("fetch")
+      ) {
+        errorInfo = {
+          message: "Network connection failed",
+          code: "NETWORK_ERROR",
+          details: error.message,
+        };
+        userMessage =
+          "Network error. Please check your connection and try again.";
+      } else if (error instanceof SyntaxError) {
+        errorInfo = {
+          message: "Server response format error",
+          code: "RESPONSE_FORMAT_ERROR",
+          details: error.message,
+        };
+        userMessage = "Server response error. Please try again.";
+      } else {
+        errorInfo = {
+          message:
+            error instanceof Error
+              ? error.message
+              : "An unexpected error occurred",
           code: "UNKNOWN_ERROR",
-        });
+          details: error instanceof Error ? error.stack : undefined,
+        };
+        userMessage =
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred";
       }
+
+      setLastError(errorInfo);
+      toast.error(userMessage);
     } finally {
       setIsGenerating(false);
     }
@@ -127,7 +160,12 @@ export default function GeneratePage() {
 
   const retryGeneration = async () => {
     if (lastGenerationOptions) {
-      await handleGeneration(lastGenerationOptions);
+      try {
+        await handleGeneration(lastGenerationOptions);
+      } catch (error) {
+        console.error("Retry failed:", error);
+        toast.error("Retry failed. Please try again.");
+      }
     }
   };
 
@@ -244,6 +282,14 @@ export default function GeneratePage() {
                       </pre>
                     </details>
                   )}
+                  {lastError.validationErrors?.map((error) => (
+                    <p
+                      className="mt-1 font-mono whitespace-pre-wrap"
+                      key={error.field}
+                    >
+                      {error.message}
+                    </p>
+                  ))}
                   <div className="flex gap-2 pt-2">
                     <Button
                       variant="outline"
@@ -272,6 +318,18 @@ export default function GeneratePage() {
                       >
                         <Icons.Zap className="mr-1 h-3 w-3" />
                         Buy Tokens
+                      </Button>
+                    )}
+                    {(lastError.code === "NETWORK_ERROR" ||
+                      lastError.code === "TIMEOUT_ERROR" ||
+                      lastError.code === "INVALID_RESPONSE") && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.location.reload()}
+                      >
+                        <Icons.RotateCcw className="mr-1 h-3 w-3" />
+                        Refresh Page
                       </Button>
                     )}
                   </div>

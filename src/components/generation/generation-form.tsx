@@ -56,7 +56,7 @@ interface GenerationFormData {
     guidance_scale: number;
     num_inference_steps: number;
     strength: number;
-    seed?: number;
+    seed: number;
   };
 }
 
@@ -69,13 +69,13 @@ interface GenerationFormProps {
 
 export function GenerationForm({
   onSubmit,
+  className,
   isLoading = false,
   tokenBalance = 0,
-  className,
 }: GenerationFormProps) {
   const [activeTab, setActiveTab] = useState("images");
   const [selectedStyle, setSelectedStyle] = useState<StylePreset>(
-    STYLE_PRESETS[0]
+    Object.values(STYLE_PRESETS)[0]
   );
   const [selectedQuality, setSelectedQuality] = useState<QualitySetting>(
     QUALITY_SETTINGS[1]
@@ -99,7 +99,7 @@ export function GenerationForm({
         guidance_scale: 7.5,
         num_inference_steps: 50,
         strength: 0.8,
-        seed: undefined,
+        seed: 0,
       },
     },
   });
@@ -346,7 +346,7 @@ export function GenerationForm({
                 </CardHeader>
                 <CardContent>
                   <StylePresets
-                    presets={STYLE_PRESETS}
+                    presets={Object.values(STYLE_PRESETS)}
                     selected={selectedStyle}
                     onSelect={(preset: StylePreset) => {
                       setSelectedStyle(preset);
@@ -390,27 +390,6 @@ export function GenerationForm({
                   setValue("model", model.id as GenerationOptions["model"]);
                 }}
               />
-              {/* <Card>
-                <CardHeader>
-                  <CardTitle>OpenAI Model</CardTitle>
-                  <CardDescription>
-                    Using GPT-4.1 with DALL-E 3 for image generation
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-md border p-4">
-                    <div className="flex items-center space-x-2">
-                      <Icons.Zap className="text-primary h-5 w-5" />
-                      <div>
-                        <p className="font-medium">GPT-4.1 + DALL-E 3</p>
-                        <p className="text-muted-foreground text-sm">
-                          Advanced AI model for high-quality image generation
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card> */}
 
               <Card>
                 <CardHeader>

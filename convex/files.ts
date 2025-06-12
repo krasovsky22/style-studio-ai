@@ -21,6 +21,9 @@ export const storeFileMetadata = mutation({
         height: v.optional(v.number()),
         format: v.optional(v.string()),
         generationId: v.optional(v.id("generations")),
+        originalUrl: v.optional(v.string()), // Original Cloudinary URL
+        isPrimary: v.optional(v.boolean()), // Whether this is the primary image for the generation
+        imageOrder: v.optional(v.number()), // Order of image in the array (0-based)
       })
     ),
   },

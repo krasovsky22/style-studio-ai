@@ -3,29 +3,32 @@
 import { StylePreset, QualitySetting } from "@/types/generation";
 
 // Style presets for the generation form
-export const STYLE_PRESETS: StylePreset[] = [
-  {
+export const STYLE_PRESETS: Record<string, StylePreset> = {
+  realistic: {
     id: "realistic",
     name: "Realistic",
     description: "Photorealistic fashion photography with natural lighting",
     icon: "Camera",
   },
-  {
+  artistic: {
     id: "artistic",
     name: "Artistic",
     description: "Creative editorial style with artistic composition",
     icon: "Palette",
   },
-  {
+  minimal: {
     id: "minimal",
     name: "Minimal",
     description: "Clean minimalist background with product focus",
     icon: "Minus",
   },
-];
+};
 
 // Export style preset IDs for validation
-export const STYLE_PRESETS_IDS = STYLE_PRESETS.map((preset) => preset.id);
+export const STYLE_PRESETS_IDS = Object.keys(STYLE_PRESETS);
+export const STYLE_PRESETS_ICONS = Object.values(STYLE_PRESETS).map(
+  (preset) => preset.icon
+);
 
 // Quality settings for generation options
 export const QUALITY_SETTINGS: QualitySetting[] = [

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { v2 as cloudinary } from "cloudinary";
 import { z } from "zod";
+import { API_ERROR_CODES } from "@/constants/api-errors";
 
 // Configure Cloudinary
 cloudinary.config({
@@ -33,7 +34,11 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: "Authentication required" },
+        {
+          success: false,
+          error: "Authentication required",
+          code: API_ERROR_CODES.AUTHENTICATION_REQUIRED,
+        },
         { status: 401 }
       );
     }
@@ -44,20 +49,38 @@ export async function POST(request: NextRequest) {
     const category = (formData.get("category") as string) || "product_image";
 
     if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "No file provided",
+          code: API_ERROR_CODES.VALIDATION_ERROR,
+        },
+        { status: 400 }
+      );
     }
 
     // Validate category
     const validationResult = uploadSchema.safeParse({ category });
     if (!validationResult.success) {
-      return NextResponse.json({ error: "Invalid category" }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid category",
+          code: API_ERROR_CODES.VALIDATION_ERROR,
+        },
+        { status: 400 }
+      );
     }
 
     // Validate file size (10MB limit)
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: "File too large. Maximum size is 10MB" },
+        {
+          success: false,
+          error: "File too large. Maximum size is 10MB",
+          code: API_ERROR_CODES.VALIDATION_ERROR,
+        },
         { status: 400 }
       );
     }
@@ -66,7 +89,11 @@ export async function POST(request: NextRequest) {
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: "Invalid file type. Only JPEG, PNG, and WebP are allowed" },
+        {
+          success: false,
+          error: "Invalid file type. Only JPEG, PNG, and WebP are allowed",
+          code: API_ERROR_CODES.VALIDATION_ERROR,
+        },
         { status: 400 }
       );
     }

@@ -20,11 +20,12 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@/components/*": ["./src/components/*"],
       "@/lib/*": ["./src/lib/*"],
+      "@/convex/*": ["./convex/*"],
       "@/hooks/*": ["./src/hooks/*"],
       "@/types/*": ["./src/types/*"],
-      "@/convex/*": ["./convex/*"],
+      "@/constants/*": ["./src/constants/*"],
+      "@/components/*": ["./src/components/*"],
       "@/convex/_generated/*": ["./convex/_generated/*"]
     }
   },

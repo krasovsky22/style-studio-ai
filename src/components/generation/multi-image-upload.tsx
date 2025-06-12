@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
+import { FileCategory } from "@/convex/types";
 
 interface UploadedImage {
   id: string;
@@ -24,11 +25,7 @@ interface MultiImageUploadProps {
   placeholder?: string;
   optional?: boolean;
   className?: string;
-  category?:
-    | "product_image"
-    | "model_image"
-    | "generated_image"
-    | "profile_image";
+  category?: FileCategory;
   label?: string;
   description?: string;
 }

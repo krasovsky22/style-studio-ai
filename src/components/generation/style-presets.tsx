@@ -14,11 +14,8 @@ interface StylePresetsProps {
 }
 
 const iconMap = {
-  Shirt: Icons.Shirt,
-  Briefcase: Icons.Briefcase,
-  Zap: Icons.Zap,
-  Activity: Icons.Activity,
-  Clock: Icons.Clock,
+  Camera: Icons.Camera,
+  Palette: Icons.Palette,
   Minus: Icons.Minus,
 } as const;
 
