@@ -232,3 +232,161 @@ export const getFileStatistics = query({
     return stats;
   },
 });
+
+// Update file metadata
+export const updateFileMetadata = mutation({
+  args: {
+    fileId: v.id("files"),
+    metadata: v.object({
+      width: v.optional(v.number()),
+      height: v.optional(v.number()),
+      format: v.optional(v.string()),
+      generationId: v.optional(v.id("generations")),
+      originalUrl: v.optional(v.string()),
+      isPrimary: v.optional(v.boolean()),
+      imageOrder: v.optional(v.number()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const file = await ctx.db.get(args.fileId);
+    if (!file) {
+      throw new Error("File not found");
+    }
+
+    // Merge existing metadata with new metadata
+    const updatedMetadata = {
+      ...file.metadata,
+      ...args.metadata,
+    };
+
+    await ctx.db.patch(args.fileId, {
+      metadata: updatedMetadata,
+    });
+
+    return { success: true };
+  },
+});
+
+// Get all images associated with a generation
+export const getGenerationImages = query({
+  args: { generationId: v.id("generations") },
+  handler: async (ctx, args) => {
+    const files = await ctx.db
+      .query("files")
+      .filter((q) => q.eq(q.field("metadata.generationId"), args.generationId))
+      .collect();
+
+    // Group images by category
+    const groupedImages = {
+      productImages: files
+        .filter((f) => f.category === "product_image")
+        .sort((a, b) => {
+          // Sort by isPrimary first, then by filename/upload time
+          if (a.metadata?.isPrimary && !b.metadata?.isPrimary) return -1;
+          if (!a.metadata?.isPrimary && b.metadata?.isPrimary) return 1;
+          return a.uploadedAt - b.uploadedAt;
+        }),
+      modelImages: files
+        .filter((f) => f.category === "model_image")
+        .sort((a, b) => {
+          if (a.metadata?.isPrimary && !b.metadata?.isPrimary) return -1;
+          if (!a.metadata?.isPrimary && b.metadata?.isPrimary) return 1;
+          return a.uploadedAt - b.uploadedAt;
+        }),
+      generatedImages: files.filter((f) => f.category === "generated_image"),
+    };
+
+    return groupedImages;
+  },
+});
+
+// Get all images for a user by category
+export const getUserImagesByCategory = query({
+  args: {
+    userId: v.id("users"),
+    category: v.union(
+      v.literal("product_image"),
+      v.literal("model_image"),
+      v.literal("generated_image"),
+      v.literal("profile_image")
+    ),
+    generationId: v.optional(v.id("generations")),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const query = ctx.db
+      .query("files")
+      .withIndex("by_category", (q) => q.eq("category", args.category))
+      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .order("desc");
+
+    const files = await query.take(args.limit || 50);
+
+    // Filter by generation if specified
+    if (args.generationId) {
+      return files.filter(
+        (f) => f.metadata?.generationId === args.generationId
+      );
+    }
+
+    return files;
+  },
+});
+
+// Get all images for a specific generation in proper order
+export const getGenerationImagesOrdered = query({
+  args: { generationId: v.id("generations") },
+  handler: async (ctx, args) => {
+    // Get the generation record first to get the image arrays
+    const generation = await ctx.db.get(args.generationId);
+    if (!generation) {
+      throw new Error("Generation not found");
+    }
+
+    // Get all files linked to this generation
+    const files = await ctx.db
+      .query("files")
+      .filter((q) => q.eq(q.field("metadata.generationId"), args.generationId))
+      .collect();
+
+    // Group and sort files by category and order
+    const productImageFiles = files
+      .filter((f) => f.category === "product_image")
+      .sort(
+        (a, b) => (a.metadata?.imageOrder || 0) - (b.metadata?.imageOrder || 0)
+      );
+
+    const modelImageFiles = files
+      .filter((f) => f.category === "model_image")
+      .sort(
+        (a, b) => (a.metadata?.imageOrder || 0) - (b.metadata?.imageOrder || 0)
+      );
+
+    const generatedImageFiles = files
+      .filter((f) => f.category === "generated_image")
+      .sort((a, b) => a.uploadedAt - b.uploadedAt);
+
+    return {
+      generation,
+      images: {
+        // Return URLs from generation record (faster access)
+        productImageUrls: generation.productImages || [],
+        modelImageUrls: generation.modelImages || [],
+        resultImageUrls: generation.resultImages || [],
+        // Return detailed file information
+        productImageFiles,
+        modelImageFiles,
+        generatedImageFiles,
+      },
+      metadata: {
+        totalProductImages: productImageFiles.length,
+        totalModelImages: modelImageFiles.length,
+        totalGeneratedImages: generatedImageFiles.length,
+        primaryProductImage: productImageFiles.find(
+          (f) => f.metadata?.isPrimary
+        ),
+        primaryModelImage: modelImageFiles.find((f) => f.metadata?.isPrimary),
+      },
+    };
+  },
+});

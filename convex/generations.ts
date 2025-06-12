@@ -7,8 +7,8 @@ import { v } from "convex/values";
 export const createGeneration = mutation({
   args: {
     userId: v.id("users"),
-    productImageUrl: v.string(),
-    modelImageUrl: v.optional(v.string()),
+    productImages: v.array(v.id("files")),
+    modelImages: v.optional(v.array(v.id("files"))),
     prompt: v.string(),
     parameters: v.object({
       model: v.string(),
@@ -37,8 +37,9 @@ export const createGeneration = mutation({
       userId: args.userId,
       status: "pending",
       createdAt: now,
-      productImageUrl: args.productImageUrl,
-      modelImageUrl: args.modelImageUrl,
+      productImages: args.productImages,
+      modelImages: args.modelImages || [],
+      resultImages: [],
       prompt: args.prompt,
       parameters: args.parameters,
       tokensUsed: 0, // Will be set to 1 when generation completes successfully
@@ -70,7 +71,7 @@ export const updateGenerationStatus = mutation({
       v.literal("failed"),
       v.literal("cancelled")
     ),
-    resultImageUrl: v.optional(v.string()),
+    resultImages: v.optional(v.array(v.id("files"))),
     error: v.optional(v.string()),
     replicateId: v.optional(v.string()),
     cloudinaryPublicId: v.optional(v.string()),
@@ -91,8 +92,8 @@ export const updateGenerationStatus = mutation({
       updates.processingTime = now - generation.createdAt;
     }
 
-    if (args.resultImageUrl) {
-      updates.resultImageUrl = args.resultImageUrl;
+    if (args.resultImages) {
+      updates.resultImages = args.resultImages;
     }
 
     if (args.error) {
@@ -276,7 +277,7 @@ export const updateFromReplicate = mutation({
       v.literal("failed"),
       v.literal("cancelled")
     ),
-    resultImageUrl: v.optional(v.string()),
+    resultImages: v.optional(v.array(v.id("files"))),
     error: v.optional(v.string()),
     processingTime: v.optional(v.number()),
   },
@@ -291,8 +292,8 @@ export const updateFromReplicate = mutation({
       replicateId: args.replicateId,
     };
 
-    if (args.resultImageUrl) {
-      updateData.resultImageUrl = args.resultImageUrl;
+    if (args.resultImages) {
+      updateData.resultImages = args.resultImages;
     }
 
     if (args.error) {
@@ -352,8 +353,8 @@ export const updateFromReplicate = mutation({
 export const startGeneration = mutation({
   args: {
     userId: v.id("users"),
-    productImageUrl: v.string(),
-    modelImageUrl: v.optional(v.string()),
+    productImages: v.array(v.id("files")),
+    modelImages: v.optional(v.array(v.id("files"))),
     prompt: v.string(),
     negativePrompt: v.optional(v.string()),
     parameters: v.object({
@@ -385,8 +386,9 @@ export const startGeneration = mutation({
       userId: args.userId,
       status: "pending",
       createdAt: now,
-      productImageUrl: args.productImageUrl,
-      modelImageUrl: args.modelImageUrl,
+      productImages: args.productImages,
+      modelImages: args.modelImages || [],
+      resultImages: [],
       prompt: args.prompt,
       parameters: args.parameters,
       tokensUsed: 0, // Will be set when generation completes
@@ -600,8 +602,9 @@ export const retryGeneration = mutation({
       userId: args.userId,
       status: "pending",
       createdAt: now,
-      productImageUrl: originalGeneration.productImageUrl,
-      modelImageUrl: originalGeneration.modelImageUrl,
+      productImages: originalGeneration.productImages,
+      modelImages: originalGeneration.modelImages,
+      resultImages: [],
       prompt: originalGeneration.prompt,
       parameters: originalGeneration.parameters,
       tokensUsed: 0,
@@ -620,5 +623,241 @@ export const retryGeneration = mutation({
     });
 
     return { generationId: newGenerationId };
+  },
+});
+
+// Helper function to get generation with populated file details
+export const getGenerationWithFiles = query({
+  args: { generationId: v.id("generations") },
+  handler: async (ctx, args) => {
+    const generation = await ctx.db.get(args.generationId);
+    if (!generation) {
+      return null;
+    }
+
+    // Get file details for all images
+    const productImages = await Promise.all(
+      generation.productImages.map(async (fileId) => {
+        const file = await ctx.db.get(fileId);
+        return file
+          ? { ...file, url: await ctx.storage.getUrl(file.storageId) }
+          : null;
+      })
+    );
+
+    const modelImages = await Promise.all(
+      generation.modelImages.map(async (fileId) => {
+        const file = await ctx.db.get(fileId);
+        return file
+          ? { ...file, url: await ctx.storage.getUrl(file.storageId) }
+          : null;
+      })
+    );
+
+    const resultImages = await Promise.all(
+      generation.resultImages.map(async (fileId) => {
+        const file = await ctx.db.get(fileId);
+        return file
+          ? { ...file, url: await ctx.storage.getUrl(file.storageId) }
+          : null;
+      })
+    );
+
+    return {
+      ...generation,
+      productImagesWithUrls: productImages.filter(Boolean),
+      modelImagesWithUrls: modelImages.filter(Boolean),
+      resultImagesWithUrls: resultImages.filter(Boolean),
+    };
+  },
+});
+
+// Helper function to get user generations with file details
+export const getUserGenerationsWithFiles = query({
+  args: {
+    userId: v.id("users"),
+    limit: v.optional(v.number()),
+    status: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("processing"),
+        v.literal("completed"),
+        v.literal("failed"),
+        v.literal("cancelled")
+      )
+    ),
+  },
+  handler: async (ctx, args) => {
+    let query = ctx.db
+      .query("generations")
+      .withIndex("by_user_and_created_at", (q) => q.eq("userId", args.userId))
+      .order("desc");
+
+    if (args.status) {
+      query = ctx.db
+        .query("generations")
+        .withIndex("by_user_and_status", (q) =>
+          q.eq("userId", args.userId).eq("status", args.status!)
+        )
+        .order("desc");
+    }
+
+    const limit = args.limit || 20;
+    const generations = await query.take(limit);
+
+    // Get file details for each generation
+    const generationsWithFiles = await Promise.all(
+      generations.map(async (generation) => {
+        const productImages = await Promise.all(
+          generation.productImages.map(async (fileId) => {
+            const file = await ctx.db.get(fileId);
+            return file
+              ? { ...file, url: await ctx.storage.getUrl(file.storageId) }
+              : null;
+          })
+        );
+
+        const modelImages = await Promise.all(
+          generation.modelImages.map(async (fileId) => {
+            const file = await ctx.db.get(fileId);
+            return file
+              ? { ...file, url: await ctx.storage.getUrl(file.storageId) }
+              : null;
+          })
+        );
+
+        const resultImages = await Promise.all(
+          generation.resultImages.map(async (fileId) => {
+            const file = await ctx.db.get(fileId);
+            return file
+              ? { ...file, url: await ctx.storage.getUrl(file.storageId) }
+              : null;
+          })
+        );
+
+        return {
+          ...generation,
+          productImagesWithUrls: productImages.filter(Boolean),
+          modelImagesWithUrls: modelImages.filter(Boolean),
+          resultImagesWithUrls: resultImages.filter(Boolean),
+        };
+      })
+    );
+
+    return generationsWithFiles;
+  },
+});
+
+// Helper function to add result images to a generation
+export const addResultImages = mutation({
+  args: {
+    generationId: v.id("generations"),
+    resultImageIds: v.array(v.id("files")),
+  },
+  handler: async (ctx, args) => {
+    const generation = await ctx.db.get(args.generationId);
+    if (!generation) {
+      throw new Error("Generation not found");
+    }
+
+    // Add new result images to the existing array
+    const updatedResultImages = [
+      ...generation.resultImages,
+      ...args.resultImageIds,
+    ];
+
+    await ctx.db.patch(args.generationId, {
+      resultImages: updatedResultImages,
+    });
+
+    return { success: true, totalResultImages: updatedResultImages.length };
+  },
+});
+
+// Helper function to create file record and add to generation
+export const createFileAndAddToGeneration = mutation({
+  args: {
+    generationId: v.id("generations"),
+    userId: v.id("users"),
+    filename: v.string(),
+    contentType: v.string(),
+    size: v.number(),
+    storageId: v.string(),
+    category: v.union(
+      v.literal("product_image"),
+      v.literal("model_image"),
+      v.literal("generated_image"),
+      v.literal("profile_image")
+    ),
+    imageType: v.union(
+      v.literal("product"),
+      v.literal("model"),
+      v.literal("result")
+    ),
+    metadata: v.optional(
+      v.object({
+        width: v.optional(v.number()),
+        height: v.optional(v.number()),
+        format: v.optional(v.string()),
+        originalUrl: v.optional(v.string()),
+        isPrimary: v.optional(v.boolean()),
+        imageOrder: v.optional(v.number()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const generation = await ctx.db.get(args.generationId);
+    if (!generation) {
+      throw new Error("Generation not found");
+    }
+
+    if (generation.userId !== args.userId) {
+      throw new Error(
+        "Unauthorized: Cannot add files to another user's generation"
+      );
+    }
+
+    // Create file record
+    const fileId = await ctx.db.insert("files", {
+      userId: args.userId,
+      filename: args.filename,
+      contentType: args.contentType,
+      size: args.size,
+      storageId: args.storageId,
+      uploadedAt: Date.now(),
+      category: args.category,
+      metadata: {
+        ...args.metadata,
+        generationId: args.generationId,
+      },
+    });
+
+    // Add file to appropriate image array in generation
+    let updateField: string;
+    let currentImages: string[];
+
+    switch (args.imageType) {
+      case "product":
+        updateField = "productImages";
+        currentImages = generation.productImages;
+        break;
+      case "model":
+        updateField = "modelImages";
+        currentImages = generation.modelImages;
+        break;
+      case "result":
+        updateField = "resultImages";
+        currentImages = generation.resultImages;
+        break;
+      default:
+        throw new Error("Invalid image type");
+    }
+
+    const updatedImages = [...currentImages, fileId];
+    await ctx.db.patch(args.generationId, {
+      [updateField]: updatedImages,
+    });
+
+    return { fileId, success: true };
   },
 });

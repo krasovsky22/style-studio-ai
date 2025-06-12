@@ -37,10 +37,10 @@ export default defineSchema({
     createdAt: v.number(),
     completedAt: v.optional(v.number()),
 
-    // Image URLs
-    productImageUrl: v.string(),
-    modelImageUrl: v.optional(v.string()),
-    resultImageUrl: v.optional(v.string()),
+    // Images
+    productImages: v.array(v.id("files")), // Array of product image URLs
+    modelImages: v.array(v.id("files")),
+    resultImages: v.array(v.id("files")),
 
     // Generation parameters
     prompt: v.string(),
@@ -134,6 +134,9 @@ export default defineSchema({
         height: v.optional(v.number()),
         format: v.optional(v.string()),
         generationId: v.optional(v.id("generations")),
+        originalUrl: v.optional(v.string()), // Original Cloudinary URL
+        isPrimary: v.optional(v.boolean()), // Whether this is the primary image for the generation
+        imageOrder: v.optional(v.number()), // Order of image in the array (0-based)
       })
     ),
   })

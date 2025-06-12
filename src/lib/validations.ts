@@ -35,16 +35,15 @@ export const imageUploadSchema = z.object({
 
 // Generation schemas
 export const generationSchema = z.object({
-  productImageUrl: z
-    .string()
-    .min(1, "Product image is required")
-    .url("Please upload a valid product image"),
-  modelImageUrl: z
-    .string()
-    .url("Please upload a valid model image")
-    .optional()
-    .or(z.literal("")),
-  prompt: z
+  productImages: z
+    .array(z.string().url("Invalid product image URL"))
+    .min(1, "At least one product image is required")
+    .max(5, "Maximum 5 product images allowed"),
+  modelImages: z
+    .array(z.string().url("Invalid model image URL"))
+    .max(3, "Maximum 3 model images allowed")
+    .optional(),
+  customPrompt: z
     .string()
     .max(500, "Custom prompt too long (max 500 characters)")
     .optional(),
@@ -82,6 +81,35 @@ export const generationSchema = z.object({
         .min(0, "Seed must be a positive number")
         .max(2147483647, "Seed must be a valid 32-bit integer")
         .optional(),
+    })
+    .optional(),
+});
+
+// Legacy single image schema for backward compatibility
+export const legacyGenerationSchema = z.object({
+  productImageUrl: z
+    .string()
+    .min(1, "Product image is required")
+    .url("Please upload a valid product image"),
+  modelImageUrl: z
+    .string()
+    .url("Please upload a valid model image")
+    .optional()
+    .or(z.literal("")),
+  prompt: z
+    .string()
+    .max(500, "Custom prompt too long (max 500 characters)")
+    .optional(),
+  style: z.enum(["realistic", "artistic", "minimal"]),
+  quality: z.enum(["standard", "high", "ultra"]),
+  aspectRatio: z.enum(["1:1", "16:9", "9:16", "3:2", "2:3"]),
+  model: z.enum(["gpt-4.1-dalle-3"]),
+  parameters: z
+    .object({
+      guidance_scale: z.number().min(1).max(20).default(7.5),
+      num_inference_steps: z.number().min(20).max(100).default(50),
+      strength: z.number().min(0.1).max(1.0).default(0.8),
+      seed: z.number().min(0).max(2147483647).optional(),
     })
     .optional(),
 });
