@@ -1,5 +1,7 @@
 // Generation-specific types for AI integration
 
+import { AI_MODELS } from "@/constants/openai";
+
 export interface OpenAIConfig {
   apiKey: string;
   baseURL?: string;
@@ -33,7 +35,7 @@ export interface GenerationOptions {
   style: "realistic" | "artistic" | "minimal";
   aspectRatio: "1:1" | "16:9" | "9:16" | "3:2" | "2:3";
   quality: "standard" | "high" | "ultra";
-  model: "gpt-4.1-dalle-3"; // OpenAI model
+  model: keyof typeof AI_MODELS; // OpenAI model IDs
   customPrompt?: string;
   parameters?: {
     guidance_scale: number;
@@ -41,14 +43,6 @@ export interface GenerationOptions {
     strength: number;
     seed?: number;
   };
-}
-
-export interface GenerationResult {
-  success: boolean;
-  replicateId?: string;
-  resultImageUrl?: string;
-  processingTime?: number;
-  error?: string;
 }
 
 // AI model configuration
@@ -59,7 +53,6 @@ export interface AIModel {
   supportedAspectRatios?: string[];
   maxResolution?: string;
   estimatedTime?: string;
-  replicateModel?: string; // Made optional for OpenAI models
   cost: number;
   supported_features: string[];
   max_images?: number; // Maximum images the model can process
@@ -136,52 +129,4 @@ export interface GenerationApiRequest {
   model: GenerationOptions["model"];
   customPrompt?: string;
   parameters?: GenerationOptions["parameters"];
-}
-
-// Generation entity type (matches Convex schema)
-export interface Generation {
-  _id: string;
-  _creationTime: number;
-  userId: string;
-  status: "pending" | "processing" | "completed" | "failed" | "cancelled";
-  productImageUrl: string;
-  modelImageUrl?: string;
-  resultImageUrl?: string;
-  prompt: string;
-  style: string;
-  quality: string;
-  aspectRatio: string;
-  model: string;
-  parameters: {
-    guidance_scale: number;
-    num_inference_steps: number;
-    strength: number;
-    seed?: number;
-  };
-  tokensUsed: number;
-  processingTime?: number;
-  completedAt?: number;
-  error?: string;
-  retryCount: number;
-  replicateId?: string;
-}
-
-// Replicate webhook event structure
-export interface ReplicateWebhookEvent {
-  id: string;
-  status: "starting" | "processing" | "succeeded" | "failed" | "canceled";
-  output?: string | string[];
-  error?: string;
-  metrics?: {
-    predict_time?: number;
-  };
-}
-
-// API response type for generation endpoints
-export interface GenerationApiResponse {
-  generationId: string;
-  replicateId: string;
-  estimatedTime: string;
-  prompt: string;
-  status?: "pending" | "processing" | "completed" | "failed" | "cancelled";
 }

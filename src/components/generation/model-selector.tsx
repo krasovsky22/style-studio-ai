@@ -20,7 +20,7 @@ export function ModelSelector({
 }: ModelSelectorProps) {
   return (
     <div className={cn("space-y-3", className)}>
-      {AI_MODELS.map((model) => {
+      {Object.values(AI_MODELS).map((model) => {
         const isSelected = selected.id === model.id;
 
         return (

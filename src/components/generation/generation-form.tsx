@@ -32,11 +32,14 @@ import {
   GenerationOptions,
   QualitySetting,
   StylePreset,
+  AIModel,
 } from "@/types/generation";
 import { QUALITY_SETTINGS, STYLE_PRESETS } from "@/constants/prompts";
+import { DEFAULT_MODEL } from "@/constants/openai";
 import { cn } from "@/lib/utils";
 
 import { MultiImageUpload } from "./multi-image-upload";
+import { ModelSelector } from "./model-selector";
 import { QualitySettings } from "./quality-settings";
 import { StylePresets } from "./style-presets";
 
@@ -77,6 +80,7 @@ export function GenerationForm({
   const [selectedQuality, setSelectedQuality] = useState<QualitySetting>(
     QUALITY_SETTINGS[1]
   );
+  const [selectedModel, setSelectedModel] = useState<AIModel>(DEFAULT_MODEL);
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
@@ -90,7 +94,7 @@ export function GenerationForm({
       style: "realistic",
       quality: "standard",
       aspectRatio: "1:1",
-      model: "gpt-4.1-dalle-3",
+      model: DEFAULT_MODEL.id,
       parameters: {
         guidance_scale: 7.5,
         num_inference_steps: 50,
@@ -110,7 +114,7 @@ export function GenerationForm({
 
   const watchedValues = watch();
 
-  const estimatedCost = selectedQuality.cost; // Simplified cost calculation
+  const estimatedCost = selectedModel.cost; // Use model cost instead of quality cost
   const canGenerate = tokenBalance >= estimatedCost && !isSubmitting;
 
   // Simple client-side validation for immediate feedback
@@ -253,13 +257,6 @@ export function GenerationForm({
 
             <TabsContent value="images" className="space-y-4">
               <Card>
-                <CardHeader>
-                  <CardTitle>Product Images</CardTitle>
-                  <CardDescription>
-                    Upload images of the clothing items you want to visualize on
-                    a model. Multiple images help create better results.
-                  </CardDescription>
-                </CardHeader>
                 <CardContent>
                   <MultiImageUpload
                     onImagesChange={(urls: string[]) => {
@@ -276,7 +273,8 @@ export function GenerationForm({
                     placeholder="Upload product images"
                     category="product_image"
                     label="Product Images"
-                    description="Upload multiple angles and views of your product"
+                    description="Upload images of the clothing items you want to visualize on
+                    a model. Multiple images help create better results."
                   />
                   {validationErrors.productImages && (
                     <p className="mt-2 text-sm text-red-500">
@@ -287,14 +285,6 @@ export function GenerationForm({
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle>Model Images (Optional)</CardTitle>
-                  <CardDescription>
-                    Upload reference model images for better pose, appearance,
-                    and styling control. This helps create more consistent
-                    results.
-                  </CardDescription>
-                </CardHeader>
                 <CardContent>
                   <MultiImageUpload
                     onImagesChange={(urls: string[]) => {
@@ -312,7 +302,9 @@ export function GenerationForm({
                     optional={true}
                     category="model_image"
                     label="Model Reference Images"
-                    description="Upload reference images for pose and styling"
+                    description="Upload reference model images for better pose, appearance,
+                    and styling control. This helps create more consistent
+                    results."
                   />
                   {validationErrors.modelImages && (
                     <p className="mt-2 text-sm text-red-500">
@@ -391,7 +383,14 @@ export function GenerationForm({
             </TabsContent>
 
             <TabsContent value="settings" className="space-y-4">
-              <Card>
+              <ModelSelector
+                selected={selectedModel}
+                onSelect={(model: AIModel) => {
+                  setSelectedModel(model);
+                  setValue("model", model.id as GenerationOptions["model"]);
+                }}
+              />
+              {/* <Card>
                 <CardHeader>
                   <CardTitle>OpenAI Model</CardTitle>
                   <CardDescription>
@@ -411,7 +410,7 @@ export function GenerationForm({
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
 
               <Card>
                 <CardHeader>
@@ -539,6 +538,9 @@ export function GenerationForm({
                   Estimated Cost: {estimatedCost} token
                   {estimatedCost !== 1 ? "s" : ""}
                 </span>
+                <Badge variant="outline" className="text-xs">
+                  {selectedModel.name}
+                </Badge>
               </div>
               <div className="text-muted-foreground flex items-center gap-2 text-xs">
                 <span>Your balance: {tokenBalance} tokens</span>

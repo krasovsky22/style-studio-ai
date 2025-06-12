@@ -3,8 +3,8 @@
 import { AIModel } from "@/types/generation";
 
 // Available OpenAI models for image generation
-export const AI_MODELS: AIModel[] = [
-  {
+export const AI_MODELS: Record<string, AIModel> = {
+  "dall-e-3-standard": {
     id: "dall-e-3-standard",
     name: "DALL-E 3 Standard",
     description: "High-quality image generation with standard resolution",
@@ -18,7 +18,7 @@ export const AI_MODELS: AIModel[] = [
     resolution: "1024x1024",
     quality: "standard",
   },
-  {
+  "dall-e-3-hd": {
     id: "dall-e-3-hd",
     name: "DALL-E 3 HD",
     description: "Ultra high-quality image generation with enhanced detail",
@@ -33,7 +33,7 @@ export const AI_MODELS: AIModel[] = [
     resolution: "1792x1024",
     quality: "hd",
   },
-  {
+  "gpt-4-vision-enhanced": {
     id: "gpt-4-vision-enhanced",
     name: "GPT-4 Vision + DALL-E 3",
     description:
@@ -50,10 +50,10 @@ export const AI_MODELS: AIModel[] = [
     resolution: "1792x1024",
     quality: "hd",
   },
-];
+} as const;
 
 // Default model selection
-export const DEFAULT_MODEL = AI_MODELS[0];
+export const DEFAULT_MODEL = Object.values(AI_MODELS)[0];
 
 // OpenAI API configuration
 export const OPENAI_CONFIG = {
