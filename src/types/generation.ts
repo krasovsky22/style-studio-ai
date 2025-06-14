@@ -2,33 +2,6 @@
 
 import { AI_MODELS } from "@/constants/openai";
 
-export interface OpenAIConfig {
-  apiKey: string;
-  baseURL?: string;
-  timeoutMs: number;
-  retryAttempts: number;
-}
-
-export interface GenerationRequest {
-  productImages: string[]; // Multiple product images
-  modelImages?: string[]; // Multiple model images (optional)
-  prompt: string;
-  style: "natural" | "vivid";
-  size: "1024x1024" | "1792x1024" | "1024x1792";
-  quality: "standard" | "hd";
-  n?: number;
-}
-
-export interface GenerationResponse {
-  id: string;
-  created: number;
-  data: Array<{
-    url?: string;
-    b64_json?: string;
-    revised_prompt?: string;
-  }>;
-}
-
 export interface GenerationOptions {
   productImages: string[]; // Multiple product images
   modelImages?: string[]; // Multiple model images (optional)
@@ -62,7 +35,7 @@ export interface AIModel {
 
 // Style preset configuration
 export interface StylePreset {
-  id: "realistic" | "artistic" | "minimal";
+  id: GenerationOptions["style"];
   name: string;
   description: string;
   icon: string;
@@ -70,7 +43,7 @@ export interface StylePreset {
 
 // Quality setting configuration
 export interface QualitySetting {
-  id: "standard" | "high" | "ultra";
+  id: GenerationOptions["quality"];
   name: string;
   description: string;
   cost: number;
@@ -79,13 +52,19 @@ export interface QualitySetting {
 
 // Generation form data
 export interface GenerationFormData {
-  productImage: string;
-  modelImage?: string;
-  model: string;
-  style: string;
-  aspectRatio: string;
-  quality: string;
+  productImages: string[];
+  modelImages?: string[];
   customPrompt?: string;
+  style: GenerationOptions["style"];
+  quality: GenerationOptions["quality"];
+  aspectRatio: GenerationOptions["aspectRatio"];
+  model: GenerationOptions["model"];
+  parameters?: {
+    guidance_scale: number;
+    num_inference_steps: number;
+    strength: number;
+    seed: number;
+  };
 }
 
 // Generation status for UI updates
@@ -96,37 +75,4 @@ export interface GenerationStatus {
   stage?: "uploading" | "generating" | "processing" | "finishing";
   estimatedTimeRemaining?: number;
   error?: string;
-}
-
-// Queue position information
-export interface QueueInfo {
-  position: number;
-  estimatedWaitTime: number;
-  activeGenerations: number;
-}
-
-// Prompt engineering result
-export interface PromptResult {
-  prompt: string;
-  negativePrompt: string;
-  enhancedPrompt: string;
-  detectedElements: string[];
-}
-
-// Combined generation input that includes both options and prompt result
-export interface GenerationInput {
-  options: GenerationOptions;
-  promptResult: PromptResult;
-}
-
-// Simplified generation request for the API route
-export interface GenerationApiRequest {
-  productImageUrl: string;
-  modelImageUrl?: string;
-  style: GenerationOptions["style"];
-  aspectRatio: GenerationOptions["aspectRatio"];
-  quality: GenerationOptions["quality"];
-  model: GenerationOptions["model"];
-  customPrompt?: string;
-  parameters?: GenerationOptions["parameters"];
 }

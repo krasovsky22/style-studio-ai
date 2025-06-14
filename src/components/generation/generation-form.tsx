@@ -33,6 +33,7 @@ import {
   QualitySetting,
   StylePreset,
   AIModel,
+  GenerationFormData,
 } from "@/types/generation";
 import { QUALITY_SETTINGS, STYLE_PRESETS } from "@/constants/prompts";
 import { DEFAULT_MODEL } from "@/constants/openai";
@@ -42,23 +43,6 @@ import { MultiImageUpload } from "./multi-image-upload";
 import { ModelSelector } from "./model-selector";
 import { QualitySettings } from "./quality-settings";
 import { StylePresets } from "./style-presets";
-
-// Simple client-side form data interface for basic validation
-interface GenerationFormData {
-  productImages: string[];
-  modelImages?: string[];
-  customPrompt?: string;
-  style: GenerationOptions["style"];
-  quality: GenerationOptions["quality"];
-  aspectRatio: GenerationOptions["aspectRatio"];
-  model: GenerationOptions["model"];
-  parameters?: {
-    guidance_scale: number;
-    num_inference_steps: number;
-    strength: number;
-    seed: number;
-  };
-}
 
 interface GenerationFormProps {
   onSubmit: (data: GenerationOptions) => Promise<void>;

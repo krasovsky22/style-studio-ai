@@ -31,5 +31,5 @@
     "typescript": "typescriptreact",
     "javascript": "javascriptreact"
   },
-  "cSpell.words": ["Retryable"]
+  "cSpell.words": ["dalle", "Retryable"]
 }

@@ -179,6 +179,88 @@ export const getUserTokenStats = query({
   },
 });
 
+// Deduct tokens from user balance (atomic operation)
+export const deductTokens = mutation({
+  args: {
+    userId: v.id("users"),
+    amount: v.number(),
+    reason: v.string(),
+    generationId: v.id("generations"),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    if (user.tokenBalance < args.amount) {
+      throw new Error(
+        `Insufficient tokens. Required: ${args.amount}, Available: ${user.tokenBalance}`
+      );
+    }
+
+    const newBalance = user.tokenBalance - args.amount;
+    const newTotalUsed = user.totalTokensUsed + args.amount;
+
+    await ctx.db.patch(args.userId, {
+      tokenBalance: newBalance,
+      totalTokensUsed: newTotalUsed,
+    });
+
+    // Log the token deduction
+    await ctx.db.insert("usage", {
+      userId: args.userId,
+      action: "generation_started",
+      timestamp: Date.now(),
+      metadata: {
+        tokensUsed: args.amount,
+        generationId: args.generationId,
+        reason: args.reason,
+      },
+    });
+
+    return newBalance;
+  },
+});
+
+// Add tokens to user balance (for refunds)
+export const addTokens = mutation({
+  args: {
+    userId: v.id("users"),
+    amount: v.number(),
+    reason: v.string(),
+    generationId: v.optional(v.id("generations")),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const newBalance = user.tokenBalance + args.amount;
+    const newTotalUsed = Math.max(0, user.totalTokensUsed - args.amount);
+
+    await ctx.db.patch(args.userId, {
+      tokenBalance: newBalance,
+      totalTokensUsed: newTotalUsed,
+    });
+
+    // Log the token addition/refund
+    await ctx.db.insert("usage", {
+      userId: args.userId,
+      action: "generation_failed", // Use this for refunds
+      timestamp: Date.now(),
+      metadata: {
+        tokensUsed: -args.amount, // Negative for refund
+        generationId: args.generationId,
+        reason: args.reason,
+      },
+    });
+
+    return newBalance;
+  },
+});
+
 // Admin function to grant free tokens
 export const grantFreeTokens = mutation({
   args: {

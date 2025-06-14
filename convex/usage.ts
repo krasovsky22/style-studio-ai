@@ -25,6 +25,12 @@ export const logUserAction = mutation({
         modelUsed: v.optional(v.string()),
         imageSize: v.optional(v.string()),
         userAgent: v.optional(v.string()),
+        reason: v.optional(v.string()),
+        transactionType: v.optional(
+          v.union(v.literal("debit"), v.literal("credit"))
+        ),
+        balanceAfter: v.optional(v.number()),
+        refund: v.optional(v.boolean()),
       })
     ),
     ipAddress: v.optional(v.string()),

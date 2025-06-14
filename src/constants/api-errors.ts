@@ -16,11 +16,16 @@ export const API_ERROR_CODES = {
   // Resource Errors (4xx)
   INSUFFICIENT_TOKENS: "INSUFFICIENT_TOKENS",
   RATE_LIMIT_EXCEEDED: "RATE_LIMIT_EXCEEDED",
+  MODEL_ERROR: "MODEL_ERROR",
 
   // Service Errors (5xx)
   QUEUE_FULL: "QUEUE_FULL",
   SERVER_ERROR: "SERVER_ERROR",
   SERVICE_UNAVAILABLE: "SERVICE_UNAVAILABLE",
+
+  // OPEN AI ERRORs
+  OPENAI_ERROR: "OPENAI_ERROR",
+  IMAGE_GENERATION_ERROR: "IMAGE_GENERATION_ERROR",
 } as const;
 
 export type APIErrorCode =
@@ -36,9 +41,11 @@ export const ERROR_STATUS_CODES = {
   [API_ERROR_CODES.IMAGE_VALIDATION_ERROR]: 400,
   [API_ERROR_CODES.INSUFFICIENT_TOKENS]: 400,
   [API_ERROR_CODES.RATE_LIMIT_EXCEEDED]: 429,
+  [API_ERROR_CODES.MODEL_ERROR]: 400,
   [API_ERROR_CODES.QUEUE_FULL]: 503,
   [API_ERROR_CODES.SERVER_ERROR]: 500,
   [API_ERROR_CODES.SERVICE_UNAVAILABLE]: 503,
+  [API_ERROR_CODES.OPENAI_ERROR]: 500,
 } as const;
 
 /**
@@ -80,6 +87,12 @@ export const ERROR_MESSAGES = {
       "You've made too many requests recently. Please wait a moment before trying again.",
     action: "Wait & Retry",
   },
+  [API_ERROR_CODES.MODEL_ERROR]: {
+    title: "Model Error",
+    message:
+      "There was an issue with the selected AI model or its configuration. Please try a different model.",
+    action: "Change Model",
+  },
   [API_ERROR_CODES.QUEUE_FULL]: {
     title: "Service Busy",
     message:
@@ -95,6 +108,12 @@ export const ERROR_MESSAGES = {
   [API_ERROR_CODES.SERVICE_UNAVAILABLE]: {
     title: "Service Unavailable",
     message: "The service is temporarily unavailable. Please try again later.",
+    action: "Try Again",
+  },
+  [API_ERROR_CODES.OPENAI_ERROR]: {
+    title: "AI Service Error",
+    message:
+      "There was an issue with the AI generation service. Please try again.",
     action: "Try Again",
   },
 } as const;
@@ -117,22 +136,12 @@ export const ERROR_CATEGORY_MAP = {
   [API_ERROR_CODES.IMAGE_VALIDATION_ERROR]: ERROR_CATEGORIES.VALIDATION,
   [API_ERROR_CODES.INSUFFICIENT_TOKENS]: ERROR_CATEGORIES.RESOURCE,
   [API_ERROR_CODES.RATE_LIMIT_EXCEEDED]: ERROR_CATEGORIES.RESOURCE,
+  [API_ERROR_CODES.MODEL_ERROR]: ERROR_CATEGORIES.VALIDATION,
   [API_ERROR_CODES.QUEUE_FULL]: ERROR_CATEGORIES.SERVICE,
   [API_ERROR_CODES.SERVER_ERROR]: ERROR_CATEGORIES.SERVER,
   [API_ERROR_CODES.SERVICE_UNAVAILABLE]: ERROR_CATEGORIES.SERVICE,
+  [API_ERROR_CODES.OPENAI_ERROR]: ERROR_CATEGORIES.SERVICE,
 } as const;
-
-/**
- * Helper function to get error details by code
- */
-export function getErrorDetails(code: APIErrorCode) {
-  return {
-    code,
-    statusCode: ERROR_STATUS_CODES[code],
-    message: ERROR_MESSAGES[code],
-    category: ERROR_CATEGORY_MAP[code],
-  };
-}
 
 /**
  * Helper function to check if an error is retryable

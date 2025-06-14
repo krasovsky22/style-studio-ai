@@ -1,9 +1,13 @@
 // Prompt templates and constants
 
-import { StylePreset, QualitySetting } from "@/types/generation";
+import {
+  StylePreset,
+  QualitySetting,
+  GenerationOptions,
+} from "@/types/generation";
 
 // Style presets for the generation form
-export const STYLE_PRESETS: Record<string, StylePreset> = {
+export const STYLE_PRESETS: Record<GenerationOptions["style"], StylePreset> = {
   realistic: {
     id: "realistic",
     name: "Realistic",
@@ -25,7 +29,6 @@ export const STYLE_PRESETS: Record<string, StylePreset> = {
 };
 
 // Export style preset IDs for validation
-export const STYLE_PRESETS_IDS = Object.keys(STYLE_PRESETS);
 export const STYLE_PRESETS_ICONS = Object.values(STYLE_PRESETS).map(
   (preset) => preset.icon
 );
@@ -55,83 +58,31 @@ export const QUALITY_SETTINGS: QualitySetting[] = [
   },
 ];
 
-export const PROMPT_TEMPLATES = {
-  base: "A {product_description} worn by a {model_description} in a {setting}, {style_modifiers}, professional fashion photography, {quality_modifiers}",
-
-  // Product-specific templates
-  clothing:
-    "A stylish {product_type} {product_description} elegantly worn by a {model_description}, {style_modifiers}, {setting}, professional fashion photography, {quality_modifiers}",
-
-  // Simple template for minimal prompts
-  simple:
-    "{product_description} on a {model_description}, {style_modifiers}, {quality_modifiers}",
-};
-
-export const STYLE_VARIATIONS = {
+export const STYLE_VARIATIONS: Record<
+  GenerationOptions["style"],
+  { modifiers: string; setting: string }
+> = {
   realistic: {
     modifiers:
       "photorealistic fashion photography, studio lighting, commercial quality, detailed fabric textures",
     setting: "professional studio, controlled lighting, clean background",
-    negative: "cartoon, anime, illustration, painting, sketch, low quality",
   },
   artistic: {
     modifiers:
       "artistic fashion editorial, creative lighting, artistic composition, fashion magazine style",
     setting: "creative environment, dramatic lighting, artistic backdrop",
-    negative: "boring, plain, amateur, snapshot, poor composition",
   },
   minimal: {
     modifiers:
       "clean minimalist background, focused product showcase, simple elegant presentation",
     setting: "minimal white background, soft lighting, clean composition",
-    negative: "cluttered, busy background, distracting elements, complex",
   },
 };
 
-export const QUALITY_MODIFIERS = {
-  standard: {
-    positive: "good quality, clear details, well-lit",
-    negative: "blurry, low quality, poor lighting",
-  },
-  high: {
-    positive:
-      "high resolution, sharp details, professional photography quality",
-    negative: "pixelated, grainy, amateur quality",
-  },
-  ultra: {
-    positive:
-      "ultra high quality, 8k resolution, award-winning fashion photography",
-    negative: "compressed, artifacted, low resolution",
-  },
-};
-
-export const COMMON_NEGATIVE_PROMPTS = [
-  "blurry",
-  "low quality",
-  "distorted",
-  "deformed",
-  "bad anatomy",
-  "watermark",
-  "signature",
-  "text",
-  "cropped",
-  "out of frame",
-  "worst quality",
-  "low contrast",
-  "underexposed",
-  "overexposed",
-  "amateur",
-  "unnatural",
-];
-
-export const PRODUCT_PATTERNS = {
-  shirt: ["shirt", "blouse", "top", "tee"],
-  dress: ["dress", "gown", "frock"],
-  pants: ["pants", "trousers", "jeans", "slacks"],
-  jacket: ["jacket", "blazer", "coat", "cardigan"],
-  skirt: ["skirt", "mini", "maxi"],
-  shoes: ["shoes", "boots", "sneakers", "heels"],
-  accessories: ["hat", "bag", "purse", "jewelry", "watch"],
+export const QUALITY_MODIFIERS: Record<GenerationOptions["quality"], string> = {
+  standard: "good quality, clear details, well-lit",
+  high: "high resolution, sharp details, professional photography quality",
+  ultra: "ultra high quality, 8k resolution, award-winning fashion photography",
 };
 
 export const MODEL_DESCRIPTIONS = {
@@ -140,12 +91,12 @@ export const MODEL_DESCRIPTIONS = {
     "fashion model",
     "elegant person",
     "stylish individual",
-  ],
+  ].join(", "),
   artistic: [
     "artistic model",
     "creative individual",
     "expressive person",
     "artistic subject",
-  ],
-  minimal: ["model", "person", "individual", "subject"],
+  ].join(", "),
+  minimal: ["model", "person", "individual", "subject"].join(", "),
 };

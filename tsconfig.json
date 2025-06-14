@@ -24,6 +24,7 @@
       "@/convex/*": ["./convex/*"],
       "@/hooks/*": ["./src/hooks/*"],
       "@/types/*": ["./src/types/*"],
+      "@/utils/*": ["./src/utils/*"],
       "@/constants/*": ["./src/constants/*"],
       "@/components/*": ["./src/components/*"],
       "@/convex/_generated/*": ["./convex/_generated/*"]
