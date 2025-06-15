@@ -126,30 +126,6 @@ interface CloudinaryTransformationParams {
 }
 
 /**
- * Upload preset options interface
- */
-interface CloudinaryPresetOptions {
-  name: string;
-  folder?: string;
-  tags?: string;
-  allowed_formats?: string;
-  transformation?: TransformationOptions[];
-}
-
-/**
- * Upload preset response interface
- */
-export interface CloudinaryPresetResult {
-  name: string;
-  settings: {
-    folder?: string;
-    tags?: string;
-    allowed_formats?: string;
-    transformation?: object;
-  };
-}
-
-/**
  * Uploads image buffer to Cloudinary using upload_stream
  * Based on Cloudinary Node.js SDK best practices
  */
@@ -217,59 +193,6 @@ export async function uploadImageBuffer(
 }
 
 /**
- * Uploads image from URL to Cloudinary
- * Using the upload method for URL sources
- */
-export async function uploadImageFromUrl(
-  imageUrl: string,
-  filename: string,
-  options: CloudinaryUploadOptions = {}
-): Promise<CloudinaryUploadResult> {
-  try {
-    const uploadOptions = {
-      public_id: options.public_id || filename,
-      folder: options.folder
-        ? typeof options.folder === "string" &&
-          options.folder in CLOUDINARY_CONFIG.folders
-          ? CLOUDINARY_CONFIG.folders[
-              options.folder as keyof typeof CLOUDINARY_CONFIG.folders
-            ]
-          : options.folder
-        : CLOUDINARY_CONFIG.folders.uploads,
-      quality: options.quality || CLOUDINARY_CONFIG.defaults.quality,
-      fetch_format: options.format || CLOUDINARY_CONFIG.defaults.format,
-      use_filename: options.use_filename ?? true,
-      unique_filename: options.unique_filename ?? false,
-      overwrite: options.overwrite ?? true,
-      tags: options.tags,
-      eager: options.eager,
-      transformation: options.transformation,
-    };
-
-    const result = await cloudinary.uploader.upload(imageUrl, uploadOptions);
-
-    return {
-      public_id: result.public_id,
-      secure_url: result.secure_url,
-      url: result.url,
-      width: result.width,
-      height: result.height,
-      format: result.format,
-      bytes: result.bytes,
-      created_at: result.created_at,
-      etag: result.etag,
-    };
-  } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
-    throw new CloudinaryError(
-      `Upload from URL failed: ${errorMessage}`,
-      API_ERROR_CODES.SERVER_ERROR
-    );
-  }
-}
-
-/**
  * Generates a transformation URL for an existing Cloudinary asset
  * Uses cloudinary.url() method for optimal URL generation
  */
@@ -333,42 +256,6 @@ export function generateResponsiveUrls(
 }
 
 /**
- * Gets detailed information about a Cloudinary asset
- * Uses the Admin API resource method
- */
-export async function getAssetInfo(publicId: string) {
-  try {
-    const result = await cloudinary.api.resource(publicId, {
-      colors: true,
-      faces: true,
-      quality_analysis: true,
-    });
-
-    return {
-      public_id: result.public_id,
-      secure_url: result.secure_url,
-      url: result.url,
-      width: result.width,
-      height: result.height,
-      format: result.format,
-      bytes: result.bytes,
-      created_at: result.created_at,
-      colors: result.colors,
-      faces: result.faces,
-      quality_analysis: result.quality_analysis,
-      etag: result.etag,
-    };
-  } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
-    throw new CloudinaryError(
-      `Failed to get asset info: ${errorMessage}`,
-      API_ERROR_CODES.SERVER_ERROR
-    );
-  }
-}
-
-/**
  * Deletes an asset from Cloudinary
  * Uses the uploader destroy method
  */
@@ -389,53 +276,6 @@ export async function deleteAsset(
 }
 
 /**
- * Applies eager transformations to an existing asset
- * Uses the explicit method for post-upload transformations
- */
-export async function applyEagerTransformations(
-  publicId: string,
-  transformations: TransformationOptions[]
-): Promise<CloudinaryUploadResult> {
-  try {
-    const eagerTransformations = transformations.map((transform) => ({
-      width: transform.width,
-      height: transform.height,
-      crop: transform.crop || "fill",
-      quality: transform.quality || "auto",
-      format: transform.format || "auto",
-      gravity: transform.gravity,
-      effect: transform.effect,
-      radius: transform.radius,
-      angle: transform.angle,
-    }));
-
-    const result = await cloudinary.uploader.explicit(publicId, {
-      type: "upload",
-      eager: eagerTransformations,
-    });
-
-    return {
-      public_id: result.public_id,
-      secure_url: result.secure_url,
-      url: result.url,
-      width: result.width,
-      height: result.height,
-      format: result.format,
-      bytes: result.bytes,
-      created_at: result.created_at,
-      etag: result.etag,
-    };
-  } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
-    throw new CloudinaryError(
-      `Failed to apply transformations: ${errorMessage}`,
-      API_ERROR_CODES.SERVER_ERROR
-    );
-  }
-}
-
-/**
  * Validates if a URL is a Cloudinary URL
  */
 export function isCloudinaryUrl(url: string): boolean {
@@ -443,6 +283,22 @@ export function isCloudinaryUrl(url: string): boolean {
     /^https?:\/\/res\.cloudinary\.com\/[^\/]+\//.test(url) ||
     /^https?:\/\/[^.]+\.cloudinary\.com\//.test(url)
   );
+}
+
+/**
+ *
+ * @param imageUrls
+ */
+export function validateImageUrls(imageUrls: string[]): void {
+  for (const url of imageUrls) {
+    if (!isCloudinaryUrl(url)) {
+      throw new CloudinaryError(
+        `Invalid Cloudinary URL: ${url}`,
+        API_ERROR_CODES.IMAGE_VALIDATION_ERROR,
+        400
+      );
+    }
+  }
 }
 
 /**
@@ -456,89 +312,4 @@ export function extractPublicId(cloudinaryUrl: string): string | null {
     return publicId.replace(/\.[^.]+$/, "");
   }
   return null;
-}
-
-/**
- * Creates an upload preset for consistent upload configurations
- */
-export async function createUploadPreset(
-  name: string,
-  options: {
-    folder?: string;
-    tags?: string[];
-    transformation?: TransformationOptions;
-    allowed_formats?: string[];
-  } = {}
-): Promise<CloudinaryPresetResult> {
-  try {
-    const presetOptions: CloudinaryPresetOptions = {
-      name,
-      folder: options.folder || CLOUDINARY_CONFIG.folders.uploads,
-      tags: options.tags?.join(", "),
-      allowed_formats: options.allowed_formats?.join(", ") || "jpg, png, webp",
-    };
-
-    if (options.transformation) {
-      presetOptions.transformation = [options.transformation];
-    }
-
-    const result = await cloudinary.api.create_upload_preset(presetOptions);
-    return {
-      name: result.name,
-      settings: {
-        folder: result.settings.folder,
-        tags: result.settings.tags,
-        allowed_formats: result.settings.allowed_formats,
-        transformation: result.settings.transformation,
-      },
-    };
-  } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
-    throw new CloudinaryError(
-      `Failed to create upload preset: ${errorMessage}`,
-      API_ERROR_CODES.SERVER_ERROR
-    );
-  }
-}
-
-/**
- * @deprecated Use uploadImageBuffer instead
- * Backward compatibility wrapper for the old uploadToCloudinary function
- */
-export async function uploadToCloudinary(
-  buffer: Buffer,
-  filename: string
-): Promise<string> {
-  const result = await uploadImageBuffer(buffer, filename, {
-    folder: "generations",
-    quality: "auto",
-    format: "png",
-  });
-  return result.secure_url;
-}
-
-// Export the CloudinaryError class for external use
-export { CloudinaryError };
-
-// Placeholder function for image URL validation
-export async function validateImageUrls(
-  productImages: string[],
-  modelImages?: string[]
-): Promise<void> {
-  // TODO: Implement proper image URL validation
-  // For now, just basic URL validation
-  const allImages = [...productImages, ...(modelImages || [])];
-
-  for (const url of allImages) {
-    try {
-      new URL(url);
-    } catch {
-      throw new CloudinaryError(
-        `Invalid image URL: ${url}`,
-        API_ERROR_CODES.IMAGE_VALIDATION_ERROR,
-        400
-      );
-    }
-  }
 }

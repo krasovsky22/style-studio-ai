@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { v2 as cloudinary } from "cloudinary";
 import { z } from "zod";
 import { API_ERROR_CODES } from "@/constants/api-errors";
+import { uploadImageBuffer } from "@/services/cloudinary";
 
 // Configure Cloudinary
 cloudinary.config({
@@ -11,16 +12,6 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-
-// Cloudinary upload result type
-interface CloudinaryUploadResult {
-  width: number;
-  height: number;
-  format: string;
-  bytes: number;
-  public_id: string;
-  secure_url: string;
-}
 
 const uploadSchema = z.object({
   category: z
@@ -102,35 +93,12 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Upload to Cloudinary
-    const uploadResult = await new Promise<CloudinaryUploadResult>(
-      (resolve, reject) => {
-        cloudinary.uploader
-          .upload_stream(
-            {
-              resource_type: "image",
-              folder: `style-studio-ai/${validationResult.data.category}`,
-              public_id: `${session.user.id}_${Date.now()}`,
-              transformation: [{ quality: "auto" }, { fetch_format: "auto" }],
-            },
-            (error, result) => {
-              if (error) {
-                reject(error);
-              } else if (result) {
-                resolve({
-                  width: result.width,
-                  height: result.height,
-                  format: result.format,
-                  bytes: result.bytes,
-                  public_id: result.public_id,
-                  secure_url: result.secure_url,
-                });
-              } else {
-                reject(new Error("Upload failed - no result"));
-              }
-            }
-          )
-          .end(buffer);
+    const uploadResult = await uploadImageBuffer(
+      buffer,
+      `${session.user.id}_${Date.now()}`,
+      {
+        folder: `style-studio-ai/${validationResult.data.category}`,
+        transformation: [{ quality: "auto" }, { fetch_format: "auto" }],
       }
     );
 

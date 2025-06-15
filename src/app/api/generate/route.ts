@@ -56,10 +56,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 4: Image URL Validation
-    await validateImageUrls(
-      validatedData.productImages,
-      validatedData.modelImages
-    );
+    await validateImageUrls([
+      ...validatedData.productImages,
+      ...(validatedData.modelImages ?? []),
+    ]);
 
     const generationId = await imageGenerationService.processImageGeneration(
       validatedData,

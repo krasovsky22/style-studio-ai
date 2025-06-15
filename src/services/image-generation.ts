@@ -66,12 +66,20 @@ export class ImageGenerationService {
       tokenCost
     );
 
-    const response = await generateImages({
+    const { _success, _images } = await generateImages({
       ...validatedData,
       prompt: optimizedPrompt,
     });
 
-    console.log("Generated images response:", response);
+    // for (const image of images) {
+    // Upload each image to Cloudinary
+    //   const uploadResult = await uploadImageBuffer(image, {
+    //     folder: CLOUDINARY_CONFIG.folders.generations,
+    //     publicId: `${generationId}/${image.name}`,
+    //   };
+    // }
+
+    console.log("Generated images response:", { _success, _images });
 
     return generationId;
 

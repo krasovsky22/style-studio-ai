@@ -387,7 +387,7 @@ export const tokenService = {
    * Refund tokens for a failed generation
    */
   async refundForFailedGeneration(
-    userId: string,
+    userId: Id<"users">,
     amount: number,
     generationId: Id<"generations">
   ): Promise<number> {
