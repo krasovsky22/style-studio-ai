@@ -17,7 +17,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
-import Image from "next/image";
+import { ImageGallery } from "./image-gallery";
 import { GenerationStatus, Generation } from "@/convex/types";
 
 // Type for the generation object returned from Convex
@@ -235,54 +235,20 @@ export function GenerationStatusDisplay({
         )}
 
         {/* Result Images */}
-        {generation.status === "completed" && generation.resultImageUrl && (
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium">Result</h4>
-            <div className="relative aspect-video overflow-hidden rounded-lg border">
-              <Image
-                src={generation.resultImageUrl}
-                alt="Generated result"
-                fill
-                className="object-cover"
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const link = document.createElement("a");
-                  link.href = generation.resultImageUrl!;
-                  link.download = `generation-${generation._id}.jpg`;
-                  link.click();
-                }}
-              >
-                <Icons.Download className="mr-2 h-4 w-4" />
-                Download
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (navigator.share) {
-                    navigator.share({
-                      title: "AI Generated Fashion Image",
-                      url: generation.resultImageUrl,
-                    });
-                  } else {
-                    navigator.clipboard.writeText(generation.resultImageUrl!);
-                    toast.success("Link copied to clipboard");
-                  }
-                }}
-              >
-                <Icons.Share className="mr-2 h-4 w-4" />
-                Share
-              </Button>
-            </div>
-          </div>
-        )}
+        {generation.status === "completed" &&
+          (generation.resultImages?.length || generation.resultImageUrl) && (
+            <ImageGallery
+              images={
+                generation.resultImages?.length
+                  ? generation.resultImages
+                  : [generation.resultImageUrl!]
+              }
+              generationId={generation._id}
+              aspectRatio="square"
+              showActions={true}
+              maxColumns={3}
+            />
+          )}
 
         {/* Retry Button for Failed Generations */}
         {generation.status === "failed" && (

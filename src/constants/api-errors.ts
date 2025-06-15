@@ -46,6 +46,7 @@ export const ERROR_STATUS_CODES = {
   [API_ERROR_CODES.SERVER_ERROR]: 500,
   [API_ERROR_CODES.SERVICE_UNAVAILABLE]: 503,
   [API_ERROR_CODES.OPENAI_ERROR]: 500,
+  [API_ERROR_CODES.IMAGE_GENERATION_ERROR]: 500,
 } as const;
 
 /**
@@ -116,6 +117,12 @@ export const ERROR_MESSAGES = {
       "There was an issue with the AI generation service. Please try again.",
     action: "Try Again",
   },
+  [API_ERROR_CODES.IMAGE_GENERATION_ERROR]: {
+    title: "Image Generation Failed",
+    message:
+      "There was an error generating your image. Please try again with different parameters.",
+    action: "Try Again",
+  },
 } as const;
 
 /**
@@ -131,16 +138,10 @@ export const ERROR_CATEGORIES = {
 
 export const ERROR_CATEGORY_MAP = {
   [API_ERROR_CODES.AUTHENTICATION_REQUIRED]: ERROR_CATEGORIES.AUTHENTICATION,
-  [API_ERROR_CODES.USER_NOT_FOUND]: ERROR_CATEGORIES.AUTHENTICATION,
-  [API_ERROR_CODES.VALIDATION_ERROR]: ERROR_CATEGORIES.VALIDATION,
-  [API_ERROR_CODES.IMAGE_VALIDATION_ERROR]: ERROR_CATEGORIES.VALIDATION,
-  [API_ERROR_CODES.INSUFFICIENT_TOKENS]: ERROR_CATEGORIES.RESOURCE,
-  [API_ERROR_CODES.RATE_LIMIT_EXCEEDED]: ERROR_CATEGORIES.RESOURCE,
-  [API_ERROR_CODES.MODEL_ERROR]: ERROR_CATEGORIES.VALIDATION,
-  [API_ERROR_CODES.QUEUE_FULL]: ERROR_CATEGORIES.SERVICE,
   [API_ERROR_CODES.SERVER_ERROR]: ERROR_CATEGORIES.SERVER,
   [API_ERROR_CODES.SERVICE_UNAVAILABLE]: ERROR_CATEGORIES.SERVICE,
   [API_ERROR_CODES.OPENAI_ERROR]: ERROR_CATEGORIES.SERVICE,
+  [API_ERROR_CODES.IMAGE_GENERATION_ERROR]: ERROR_CATEGORIES.SERVICE,
 } as const;
 
 /**
@@ -165,4 +166,16 @@ export function requiresAuthentication(code: APIErrorCode): boolean {
     API_ERROR_CODES.USER_NOT_FOUND,
   ];
   return authCodes.includes(code);
+}
+
+export function getErrorDetails(code: APIErrorCode) {
+  const details = ERROR_MESSAGES[code];
+  if (!details) {
+    return {
+      title: "Unknown Error",
+      message: "An unknown error occurred. Please try again later.",
+      action: "Contact Support",
+    };
+  }
+  return details;
 }

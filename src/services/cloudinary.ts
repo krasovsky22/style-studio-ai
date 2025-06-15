@@ -44,7 +44,7 @@ class CloudinaryError extends Error {
 }
 
 // Configuration constants
-const CLOUDINARY_CONFIG = {
+export const CLOUDINARY_CONFIG = {
   folders: {
     uploads: "style-studio-ai/uploads",
     generations: "style-studio-ai/generations",
@@ -130,10 +130,11 @@ interface CloudinaryTransformationParams {
  * Based on Cloudinary Node.js SDK best practices
  */
 export async function uploadImageBuffer(
-  buffer: Buffer,
+  bytes: ArrayBuffer,
   filename: string,
   options: CloudinaryUploadOptions = {}
 ): Promise<CloudinaryUploadResult> {
+  const buffer = Buffer.from(bytes);
   const uploadOptions = {
     resource_type: "image" as const,
     public_id: options.public_id || filename,
@@ -152,7 +153,10 @@ export async function uploadImageBuffer(
     overwrite: options.overwrite ?? true,
     tags: options.tags,
     eager: options.eager,
-    transformation: options.transformation,
+    transformation: options.transformation || [
+      { quality: CLOUDINARY_CONFIG.defaults.quality },
+      { fetch_format: CLOUDINARY_CONFIG.defaults.format },
+    ],
   };
 
   return new Promise((resolve, reject) => {

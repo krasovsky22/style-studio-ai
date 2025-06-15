@@ -62,7 +62,7 @@ export function GenerationForm({
     Object.values(STYLE_PRESETS)[0]
   );
   const [selectedQuality, setSelectedQuality] = useState<QualitySetting>(
-    QUALITY_SETTINGS[1]
+    QUALITY_SETTINGS[0]
   );
   const [selectedModel, setSelectedModel] = useState<AIModel>(DEFAULT_MODEL);
   const [formErrors, setFormErrors] = useState<string[]>([]);
@@ -76,7 +76,7 @@ export function GenerationForm({
       modelImages: [],
       customPrompt: "",
       style: "realistic",
-      quality: "standard",
+      quality: "auto",
       aspectRatio: "1:1",
       model: DEFAULT_MODEL.id,
       parameters: {

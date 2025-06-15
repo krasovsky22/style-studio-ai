@@ -36,8 +36,8 @@ export const STYLE_PRESETS_ICONS = Object.values(STYLE_PRESETS).map(
 // Quality settings for generation options
 export const QUALITY_SETTINGS: QualitySetting[] = [
   {
-    id: "standard",
-    name: "Standard",
+    id: "auto",
+    name: "Auto",
     description: "Good quality",
     cost: 2,
     speed: "Medium",
@@ -50,10 +50,17 @@ export const QUALITY_SETTINGS: QualitySetting[] = [
     speed: "Slow",
   },
   {
-    id: "ultra",
-    name: "Ultra",
-    description: "Maximum quality",
-    cost: 5,
+    id: "medium",
+    name: "Medium",
+    description: "Medium quality",
+    cost: 1,
+    speed: "Very Slow",
+  },
+  {
+    id: "low",
+    name: "Low",
+    description: "Low quality",
+    cost: 1,
     speed: "Very Slow",
   },
 ];
@@ -80,9 +87,10 @@ export const STYLE_VARIATIONS: Record<
 };
 
 export const QUALITY_MODIFIERS: Record<GenerationOptions["quality"], string> = {
-  standard: "good quality, clear details, well-lit",
   high: "high resolution, sharp details, professional photography quality",
-  ultra: "ultra high quality, 8k resolution, award-winning fashion photography",
+  medium: "medium quality, balanced details, acceptable lighting",
+  low: "low quality, basic details, minimal lighting",
+  auto: "",
 };
 
 export const MODEL_DESCRIPTIONS = {

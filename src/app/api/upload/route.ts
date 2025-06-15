@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { v2 as cloudinary } from "cloudinary";
 import { z } from "zod";
 import { API_ERROR_CODES } from "@/constants/api-errors";
-import { uploadImageBuffer } from "@/services/cloudinary";
+import { CLOUDINARY_CONFIG, uploadImageBuffer } from "@/services/cloudinary";
 
 // Configure Cloudinary
 cloudinary.config({
@@ -91,14 +91,13 @@ export async function POST(request: NextRequest) {
 
     // Convert file to buffer
     const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
 
     const uploadResult = await uploadImageBuffer(
-      buffer,
+      bytes,
       `${session.user.id}_${Date.now()}`,
       {
-        folder: `style-studio-ai/${validationResult.data.category}`,
-        transformation: [{ quality: "auto" }, { fetch_format: "auto" }],
+        folder: `${CLOUDINARY_CONFIG.folders.uploads}/${validationResult.data.category}`,
+        // transformation: [{ quality: "auto" }, { fetch_format: "auto" }],
       }
     );
 

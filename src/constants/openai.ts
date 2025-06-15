@@ -4,9 +4,9 @@ import { AIModel } from "@/types/generation";
 
 // Available OpenAI models for image generation
 export const AI_MODELS: Record<string, AIModel> = {
-  "dall-e-3-standard": {
-    id: "dall-e-3-standard",
-    name: "DALL-E 3 Standard",
+  "gpt-image-1": {
+    id: "gpt-image-1",
+    name: "GPT Image 1",
     description: "High-quality image generation with standard resolution",
     cost: 3,
     supported_features: [
@@ -16,7 +16,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     ],
     max_images: 1,
     resolution: "1024x1024",
-    quality: "standard",
+    // quality: "standard",
   },
   "dall-e-3-hd": {
     id: "dall-e-3-hd",
@@ -31,7 +31,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     ],
     max_images: 1,
     resolution: "1792x1024",
-    quality: "hd",
+    // quality: "hd",
   },
   "gpt-4-vision-enhanced": {
     id: "gpt-4-vision-enhanced",
@@ -48,7 +48,7 @@ export const AI_MODELS: Record<string, AIModel> = {
     ],
     max_images: 3,
     resolution: "1792x1024",
-    quality: "hd",
+    // quality: "hd",
   },
 } as const;
 

@@ -18,6 +18,7 @@ import {
   QUALITY_MODIFIERS,
   STYLE_VARIATIONS,
 } from "@/constants/prompts";
+import { CLOUDINARY_CONFIG, uploadImageBuffer } from "./cloudinary";
 
 // Custom Error Class
 export class ImageGenerationError extends Error {
@@ -66,69 +67,139 @@ export class ImageGenerationService {
       tokenCost
     );
 
-    const { _success, _images } = await generateImages({
-      ...validatedData,
-      prompt: optimizedPrompt,
-    });
+    try {
+      // Update generation status to processing
+      await this.convex.mutation(api.generations.updateGenerationStatus, {
+        generationId,
+        status: "processing",
+      });
 
-    // for (const image of images) {
-    // Upload each image to Cloudinary
-    //   const uploadResult = await uploadImageBuffer(image, {
-    //     folder: CLOUDINARY_CONFIG.folders.generations,
-    //     publicId: `${generationId}/${image.name}`,
-    //   };
-    // }
+      console.log("Starting image generation with image analysis...", {
+        generationId,
+        productImageCount: validatedData.productImages?.length || 0,
+        modelImageCount: validatedData.modelImages?.length || 0,
+      });
 
-    console.log("Generated images response:", { _success, _images });
+      const { success, images } = await generateImages({
+        ...validatedData,
+        prompt: optimizedPrompt,
+      });
 
-    return generationId;
+      if (!success || !images.length) {
+        throw new ImageGenerationError(
+          "Failed to generate images",
+          API_ERROR_CODES.IMAGE_GENERATION_ERROR,
+          500,
+          { generationId }
+        );
+      }
 
-    // Step 10: Deduct Tokens using Token Service
-    // const newBallance = await userTokenHandler.deductTokens(
-    //   userId,
-    //   tokenCost,
-    //   generationId
-    // );
+      // STEP 10: Upload resulted images to Cloudinary and update generation record
+      const resultImageUrls: string[] = [];
 
-    // Step 11: Initiate OpenAI Generation (asynchronously)
-    // Don't await this - let it run in background
-    // initiateOpenAIGeneration(
-    //   generation.generationId,
-    //   optimizedPrompt,
-    //   validatedData
-    // ).catch((error: unknown) => {
-    //   console.error("Background generation failed:", error);
-    //   // Refund tokens on failure
-    //   userTokenHandler
-    //     .refundTokens(
-    //       session.user.id,
-    //       tokenCost,
-    //       "Generation failed - refund",
-    //       generation.generationId
-    //     )
-    //     .catch((refundError: unknown) => {
-    //       console.error("Failed to refund tokens:", refundError);
-    //     });
-    // });
+      for (const image of images) {
+        const { public_id, secure_url } = await uploadImageBuffer(
+          image,
+          `${userId}_${generationId}_${Date.now()}`,
+          {
+            folder: CLOUDINARY_CONFIG.folders.generations,
+          }
+        );
+        resultImageUrls.push(secure_url);
+        console.log("Generated image uploaded:", { public_id, secure_url });
+      }
+
+      // Update generation record with result URLs and mark as completed
+      await this.convex.mutation(api.generations.updateGenerationStatus, {
+        generationId,
+        status: "completed",
+        resultImages: resultImageUrls,
+      });
+
+      console.log("Generation completed successfully:", {
+        generationId,
+        imageCount: resultImageUrls.length,
+      });
+
+      return {
+        success: true,
+        generationId,
+        resultImages: resultImageUrls,
+      };
+    } catch (error) {
+      console.error("Error during image generation process:", error);
+
+      // Mark generation as failed and provide error details
+      await this.convex.mutation(api.generations.updateGenerationStatus, {
+        generationId,
+        status: "failed",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unknown error during generation",
+      });
+
+      throw new ImageGenerationError(
+        "Failed to complete image generation",
+        API_ERROR_CODES.IMAGE_GENERATION_ERROR,
+        500,
+        { generationId, error: String(error) }
+      );
+    }
   }
 
   // Prompt Generation
   private async generatePrompt(data: GenerationFormData): Promise<string> {
-    const { style, quality } = data;
+    const { style, quality, productImages, modelImages } = data;
 
-    let prompt = `A stylish clothes elegantly worn by a ${MODEL_DESCRIPTIONS[style]}, ${STYLE_VARIATIONS[style].modifiers}, ${STYLE_VARIATIONS[style].setting}, professional fashion photography, ${QUALITY_MODIFIERS[quality]}`;
+    // Base prompt components
+    let prompt = "";
 
+    // If we have both product and model images, create a specific outfit visualization prompt
+    if (
+      productImages &&
+      productImages.length > 0 &&
+      modelImages &&
+      modelImages.length > 0
+    ) {
+      prompt = `Generate an image showing the specific outfit/clothing from the provided product images being worn by the person from the model images. `;
+      prompt += `Style: ${STYLE_VARIATIONS[style].modifiers}, ${STYLE_VARIATIONS[style].setting}. `;
+      prompt += `Ensure the clothing fits naturally on the model while maintaining the original design and details of the outfit. `;
+    }
+    // If we only have product images, describe them being worn by a generic model
+    else if (productImages && productImages.length > 0) {
+      prompt = `Generate an image of the specific outfit/clothing from the provided product images being worn by a ${MODEL_DESCRIPTIONS[style]}. `;
+      prompt += `${STYLE_VARIATIONS[style].modifiers}, ${STYLE_VARIATIONS[style].setting}. `;
+      prompt += `Show the clothing naturally worn while maintaining all original design details and colors. `;
+    }
+    // If we only have model images, create a fashion shoot with stylish clothing
+    else if (modelImages && modelImages.length > 0) {
+      prompt = `Create a fashion photograph of the person from the model images wearing stylish, fashionable clothing. `;
+      prompt += `${STYLE_VARIATIONS[style].modifiers}, ${STYLE_VARIATIONS[style].setting}. `;
+      prompt += `The outfit should complement the person's style and the overall aesthetic. `;
+    }
+    // Fallback to original prompt structure
+    else {
+      prompt = `A stylish outfit elegantly worn by a ${MODEL_DESCRIPTIONS[style]}, `;
+      prompt += `${STYLE_VARIATIONS[style].modifiers}, ${STYLE_VARIATIONS[style].setting}. `;
+    }
+
+    // Add professional photography context
+    prompt += `Professional fashion photography, ${QUALITY_MODIFIERS[quality]}`;
+
+    // Add custom prompt if provided
     if (data.customPrompt) {
       prompt += `, ${data.customPrompt}`;
     }
 
-    // Add quality modifiers
+    // Add quality-specific modifiers
     if (data.quality === "high") {
-      prompt += ", high resolution, detailed";
-    } else if (data.quality === "ultra") {
-      prompt +=
-        ", ultra high resolution, extremely detailed, professional studio lighting";
+      prompt += ", high resolution, detailed fabric textures, sharp focus";
     }
+    //  else if (data.quality === "ultra") {
+    //   prompt +=
+    //     ", ultra high resolution, extremely detailed, professional studio lighting, award-winning fashion photography";
+    // }
 
     return prompt;
   }

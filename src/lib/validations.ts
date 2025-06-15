@@ -51,7 +51,7 @@ export const generationSchema = z.object({
   style: z.enum(["realistic", "artistic", "minimal"], {
     errorMap: () => ({ message: "Please select a valid style preset" }),
   }),
-  quality: z.enum(["standard", "high", "ultra"], {
+  quality: z.enum(["auto", "high", "medium", "low"], {
     errorMap: () => ({ message: "Please select a valid quality setting" }),
   }),
   aspectRatio: z.enum(["1:1", "16:9", "9:16", "3:2", "2:3"], {

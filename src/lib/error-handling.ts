@@ -93,10 +93,10 @@ export function handleAPIError(
   if (error.requiresAuth && onAuthRequired) {
     onAuthRequired();
     if (showToast) {
-      toast.error(errorDetails.message.title, {
-        description: customMessage || errorDetails.message.message,
+      toast.error(errorDetails.message, {
+        description: customMessage || errorDetails.message,
         action: {
-          label: errorDetails.message.action,
+          label: errorDetails.message,
           onClick: onAuthRequired,
         },
       });
@@ -128,8 +128,8 @@ export function handleAPIError(
       });
     } else {
       // Show general error
-      toast.error(errorDetails.message.title, {
-        description: customMessage || errorDetails.message.message,
+      toast.error(errorDetails.message, {
+        description: customMessage || errorDetails.message,
         action:
           error.isRetryable && onRetry
             ? {
@@ -237,7 +237,7 @@ export const ErrorUtils = {
    */
   getUserMessage(error: unknown): string {
     if (error instanceof ClientAPIError) {
-      return error.details.message.message;
+      return error.details.message;
     }
     if (error instanceof Error) {
       return error.message;

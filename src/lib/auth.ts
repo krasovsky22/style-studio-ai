@@ -30,7 +30,6 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account }) {
       // Persist the OAuth access_token and user id to the token right after signin
       if (account && user) {
-        console.log("JWT callback:", { token, user, account });
         token.accessToken = account.access_token;
         token.userId = user.id;
 

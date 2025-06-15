@@ -71,7 +71,7 @@ export const updateGenerationStatus = mutation({
       v.literal("failed"),
       v.literal("cancelled")
     ),
-    resultImages: v.optional(v.array(v.id("files"))),
+    resultImages: v.optional(v.array(v.string())), // Changed to accept Cloudinary URLs
     error: v.optional(v.string()),
     replicateId: v.optional(v.string()),
     cloudinaryPublicId: v.optional(v.string()),
@@ -277,7 +277,7 @@ export const updateFromReplicate = mutation({
       v.literal("failed"),
       v.literal("cancelled")
     ),
-    resultImages: v.optional(v.array(v.id("files"))),
+    resultImages: v.optional(v.array(v.string())), // Changed to accept Cloudinary URLs
     error: v.optional(v.string()),
     processingTime: v.optional(v.number()),
   },

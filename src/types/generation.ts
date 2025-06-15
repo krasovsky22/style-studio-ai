@@ -7,7 +7,7 @@ export interface GenerationOptions {
   modelImages?: string[]; // Multiple model images (optional)
   style: "realistic" | "artistic" | "minimal";
   aspectRatio: "1:1" | "16:9" | "9:16" | "3:2" | "2:3";
-  quality: "standard" | "high" | "ultra";
+  quality: "auto" | "high" | "medium" | "low";
   model: keyof typeof AI_MODELS; // OpenAI model IDs
   customPrompt?: string;
   parameters?: {

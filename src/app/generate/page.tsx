@@ -7,6 +7,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { Header } from "@/components/layout/header";
 import { GenerationForm } from "@/components/generation/generation-form";
 import { GenerationStatusDisplay } from "@/components/generation/generation-status";
+import { ImageGallery } from "@/components/generation/image-gallery";
 import {
   Card,
   CardContent,
@@ -35,6 +36,7 @@ export default function GeneratePage() {
   const [currentGeneration, setCurrentGeneration] =
     useState<Id<"generations"> | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [resultedImages, setResultedImages] = useState<string[]>([]);
   const [lastError, setLastError] = useState<ResponseErrorType | null>(null);
   const [lastGenerationOptions, setLastGenerationOptions] =
     useState<GenerationOptions | null>(null);
@@ -59,7 +61,7 @@ export default function GeneratePage() {
     try {
       // Add timeout to prevent hanging requests
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 300000); // 300 second timeout
 
       const response = await fetch("/api/generate", {
         method: "POST",
@@ -101,8 +103,10 @@ export default function GeneratePage() {
         return;
       }
 
+      const { id, resultImages } = responseData.data;
       // Success case
-      setCurrentGeneration(responseData.data._id);
+      setCurrentGeneration(id);
+      setResultedImages(resultImages || []);
       setLastError(null); // Clear any previous errors on success
       toast.success("Generation started!");
     } catch (error) {
@@ -188,6 +192,7 @@ export default function GeneratePage() {
   const startNewGeneration = () => {
     setCurrentGeneration(null);
     setLastError(null); // Clear errors when starting fresh
+    setResultedImages([]); // Clear previous results
   };
 
   if (!session) {
@@ -357,6 +362,27 @@ export default function GeneratePage() {
 
           {/* Generation Status */}
           <div className="space-y-6">
+            {/* Immediate Results Display */}
+            {resultedImages.length > 0 && !currentGeneration && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Preview</CardTitle>
+                  <CardDescription>
+                    Images generated from your last request
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ImageGallery
+                    images={resultedImages}
+                    generationId="preview"
+                    aspectRatio="square"
+                    showActions={true}
+                    maxColumns={2}
+                  />
+                </CardContent>
+              </Card>
+            )}
+
             {currentGeneration ? (
               <div className="space-y-4">
                 <GenerationStatusDisplay

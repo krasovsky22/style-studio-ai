@@ -25,6 +25,8 @@ import {
   Hourglass,
   Camera,
   Palette,
+  Copy,
+  ExternalLink,
 } from "lucide-react";
 import { SVGProps } from "react";
 
@@ -56,6 +58,8 @@ export const Icons = {
   camera: Camera,
   palette: Palette,
   loader2: Loader2,
+  copy: Copy,
+  externalLink: ExternalLink,
 
   // Capitalized versions for consistency
   Loader2,
@@ -83,6 +87,8 @@ export const Icons = {
   Hourglass,
   Camera,
   Palette,
+  Copy,
+  ExternalLink,
 
   google: (props: SVGProps<SVGSVGElement>) => (
     <svg role="img" viewBox="0 0 24 24" {...props}>

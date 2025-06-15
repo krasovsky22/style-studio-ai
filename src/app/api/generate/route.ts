@@ -61,17 +61,20 @@ export async function POST(request: NextRequest) {
       ...(validatedData.modelImages ?? []),
     ]);
 
-    const generationId = await imageGenerationService.processImageGeneration(
-      validatedData,
-      session.user.id as Id<"users">
-    );
+    const { generationId, resultImages } =
+      await imageGenerationService.processImageGeneration(
+        validatedData,
+        session.user.id as Id<"users">
+      );
 
     // Step 12: Return Success Response
     return NextResponse.json(
       {
         success: true,
         data: {
-          _id: generationId,
+          id: generationId,
+          resultImages,
+
           //   status: "pending" as const,
           //   estimatedCost: tokenCost,
           //   estimatedTime: getEstimatedTime(validatedData.quality),
