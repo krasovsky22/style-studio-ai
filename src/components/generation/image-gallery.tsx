@@ -160,7 +160,7 @@ export function ImageGallery({
                 src={imageUrl}
                 alt={`Generated result ${index + 1}`}
                 fill
-                className="object-cover transition-transform group-hover:scale-105"
+                className="object-contain transition-transform group-hover:scale-105"
                 onClick={() => setSelectedImage({ url: imageUrl, index })}
               />
 

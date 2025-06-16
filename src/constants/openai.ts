@@ -1,6 +1,10 @@
 // OpenAI model configurations and constants
 
-import { AIModel } from "@/types/generation";
+import {
+  AIModel,
+  AIModelAspectRatio,
+  GenerationOptions,
+} from "@/types/generation";
 
 // Available OpenAI models for image generation
 export const AI_MODELS: Record<string, AIModel> = {
@@ -17,21 +21,6 @@ export const AI_MODELS: Record<string, AIModel> = {
     max_images: 1,
     resolution: "1024x1024",
     // quality: "standard",
-  },
-  "dall-e-3-hd": {
-    id: "dall-e-3-hd",
-    name: "DALL-E 3 HD",
-    description: "Ultra high-quality image generation with enhanced detail",
-    cost: 5,
-    supported_features: [
-      "text-to-image",
-      "style-transfer",
-      "product-visualization",
-      "high-resolution",
-    ],
-    max_images: 1,
-    resolution: "1792x1024",
-    // quality: "hd",
   },
   "gpt-4-vision-enhanced": {
     id: "gpt-4-vision-enhanced",
@@ -51,6 +40,17 @@ export const AI_MODELS: Record<string, AIModel> = {
     // quality: "hd",
   },
 } as const;
+
+export const AI_MODELS_ASPECT_RATIOS: Record<
+  GenerationOptions["aspectRatio"],
+  AIModelAspectRatio
+> = {
+  "1:1": { id: "1:1" },
+  "16:9": { id: "16:9" },
+  "9:16": { id: "9:16" },
+  "3:2": { id: "3:2" },
+  "2:3": { id: "2:3" },
+};
 
 // Default model selection
 export const DEFAULT_MODEL = Object.values(AI_MODELS)[0];

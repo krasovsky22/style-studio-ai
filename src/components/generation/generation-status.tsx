@@ -246,7 +246,7 @@ export function GenerationStatusDisplay({
               generationId={generation._id}
               aspectRatio="square"
               showActions={true}
-              maxColumns={3}
+              maxColumns={2}
             />
           )}
 

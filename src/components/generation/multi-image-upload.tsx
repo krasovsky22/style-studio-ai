@@ -46,6 +46,8 @@ export function MultiImageUpload({
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  console.log("uploadedImages", uploadedImages);
+
   const uploadToServer = useCallback(
     async (file: File): Promise<{ url: string; publicId: string }> => {
       const formData = new FormData();

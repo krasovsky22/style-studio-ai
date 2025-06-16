@@ -53,15 +53,15 @@ export const QUALITY_SETTINGS = {
 } as const;
 
 // Aspect ratios
-export const ASPECT_RATIOS = {
-  "1:1": { name: "Square", width: 1024, height: 1024 },
-  "16:9": { name: "Landscape", width: 1344, height: 768 },
-  "9:16": { name: "Portrait", width: 768, height: 1344 },
-  "3:2": { name: "Photo", width: 1216, height: 832 },
-  "2:3": { name: "Tall Photo", width: 832, height: 1216 },
-  "4:3": { name: "Standard", width: 1152, height: 896 },
-  "3:4": { name: "Tall Standard", width: 896, height: 1152 },
-} as const;
+// export const ASPECT_RATIOS = {
+//   "1:1": { name: "Square", width: 1024, height: 1024 },
+//   "16:9": { name: "Landscape", width: 1344, height: 768 },
+//   "9:16": { name: "Portrait", width: 768, height: 1344 },
+//   "3:2": { name: "Photo", width: 1216, height: 832 },
+//   "2:3": { name: "Tall Photo", width: 832, height: 1216 },
+//   "4:3": { name: "Standard", width: 1152, height: 896 },
+//   "3:4": { name: "Tall Standard", width: 896, height: 1152 },
+// } as const;
 
 // File upload limits
 export const FILE_LIMITS = {

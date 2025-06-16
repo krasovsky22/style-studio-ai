@@ -4,12 +4,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Icons } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
-import { AIModel } from "@/types/generation";
+import { GenerationFormData } from "@/types/generation";
 import { AI_MODELS } from "@/constants/openai";
 
 interface ModelSelectorProps {
-  selected: AIModel;
-  onSelect: (model: AIModel) => void;
+  selected: GenerationFormData["model"];
+  onSelect: (id: GenerationFormData["model"]) => void;
   className?: string;
 }
 
@@ -21,7 +21,7 @@ export function ModelSelector({
   return (
     <div className={cn("space-y-3", className)}>
       {Object.values(AI_MODELS).map((model) => {
-        const isSelected = selected.id === model.id;
+        const isSelected = selected === model.id;
 
         return (
           <Card
@@ -30,7 +30,7 @@ export function ModelSelector({
               "cursor-pointer transition-all hover:shadow-sm",
               isSelected && "ring-primary ring-2"
             )}
-            onClick={() => onSelect(model)}
+            onClick={() => onSelect(model.id)}
           >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">

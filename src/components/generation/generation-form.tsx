@@ -17,13 +17,6 @@ import {
 import { Icons } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,17 +25,17 @@ import {
   GenerationOptions,
   QualitySetting,
   StylePreset,
-  AIModel,
   GenerationFormData,
 } from "@/types/generation";
 import { QUALITY_SETTINGS, STYLE_PRESETS } from "@/constants/prompts";
-import { DEFAULT_MODEL } from "@/constants/openai";
+import { AI_MODELS, DEFAULT_MODEL } from "@/constants/openai";
 import { cn } from "@/lib/utils";
 
 import { MultiImageUpload } from "./multi-image-upload";
 import { ModelSelector } from "./model-selector";
 import { QualitySettings } from "./quality-settings";
 import { StylePresets } from "./style-presets";
+import { AspectRatio } from "./aspect-ratio";
 
 interface GenerationFormProps {
   onSubmit: (data: GenerationOptions) => Promise<void>;
@@ -64,7 +57,6 @@ export function GenerationForm({
   const [selectedQuality, setSelectedQuality] = useState<QualitySetting>(
     QUALITY_SETTINGS[0]
   );
-  const [selectedModel, setSelectedModel] = useState<AIModel>(DEFAULT_MODEL);
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
@@ -98,7 +90,7 @@ export function GenerationForm({
 
   const watchedValues = watch();
 
-  const estimatedCost = selectedModel.cost; // Use model cost instead of quality cost
+  const estimatedCost = AI_MODELS[watchedValues.model].cost; // Use model cost instead of quality cost
   const canGenerate = tokenBalance >= estimatedCost && !isSubmitting;
 
   // Simple client-side validation for immediate feedback
@@ -138,8 +130,6 @@ export function GenerationForm({
       toast.error("Insufficient tokens for generation");
       return;
     }
-
-    console.log("Form data:", data);
 
     try {
       await onSubmit({
@@ -189,6 +179,8 @@ export function GenerationForm({
       navigateToErrorTab();
     }
   }, [validationErrors, navigateToErrorTab]);
+
+  console.log("Form watched product images:", watchedValues.productImages);
 
   return (
     <div className={cn(className)}>
@@ -367,15 +359,30 @@ export function GenerationForm({
             </TabsContent>
 
             <TabsContent value="settings" className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold">Models</h3>
+                <p className="text-muted-foreground text-sm">
+                  Available Models
+                </p>
+              </div>
               <ModelSelector
-                selected={selectedModel}
-                onSelect={(model: AIModel) => {
-                  setSelectedModel(model);
-                  setValue("model", model.id as GenerationOptions["model"]);
+                selected={watchedValues.model}
+                onSelect={(modelId) => {
+                  setValue("model", modelId);
                 }}
               />
 
-              <Card>
+              <Separator />
+              <div>
+                <h3 className="text-lg font-semibold">Ascept Ratio</h3>
+              </div>
+              <AspectRatio
+                selected={watchedValues.aspectRatio}
+                onSelect={(value) => {
+                  setValue("aspectRatio", value);
+                }}
+              />
+              {/* <Card>
                 <CardHeader>
                   <CardTitle>Aspect Ratio</CardTitle>
                   <CardDescription>
@@ -404,7 +411,7 @@ export function GenerationForm({
                     </SelectContent>
                   </Select>
                 </CardContent>
-              </Card>
+              </Card> */}
             </TabsContent>
 
             <TabsContent value="advanced" className="space-y-4">
@@ -502,7 +509,7 @@ export function GenerationForm({
                   {estimatedCost !== 1 ? "s" : ""}
                 </span>
                 <Badge variant="outline" className="text-xs">
-                  {selectedModel.name}
+                  {watchedValues.model}
                 </Badge>
               </div>
               <div className="text-muted-foreground flex items-center gap-2 text-xs">

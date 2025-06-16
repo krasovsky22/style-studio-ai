@@ -73,7 +73,6 @@ export const updateGenerationStatus = mutation({
     ),
     resultImages: v.optional(v.array(v.string())), // Changed to accept Cloudinary URLs
     error: v.optional(v.string()),
-    replicateId: v.optional(v.string()),
     cloudinaryPublicId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -98,10 +97,6 @@ export const updateGenerationStatus = mutation({
 
     if (args.error) {
       updates.error = args.error;
-    }
-
-    if (args.replicateId) {
-      updates.replicateId = args.replicateId;
     }
 
     if (args.cloudinaryPublicId) {
@@ -269,7 +264,6 @@ export const processGenerationQueue = action({
 export const updateFromReplicate = mutation({
   args: {
     generationId: v.id("generations"),
-    replicateId: v.string(),
     status: v.union(
       v.literal("pending"),
       v.literal("processing"),
@@ -289,7 +283,6 @@ export const updateFromReplicate = mutation({
 
     const updateData: Partial<Doc<"generations">> = {
       status: args.status,
-      replicateId: args.replicateId,
     };
 
     if (args.resultImages) {

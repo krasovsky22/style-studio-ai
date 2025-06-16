@@ -18,6 +18,13 @@ export interface GenerationOptions {
   };
 }
 
+export interface AIModelAspectRatio {
+  id: GenerationOptions["aspectRatio"];
+  name?: string; // Optional name for display
+  description?: string; // Optional description for display
+  icon?: string; // Optional icon for display
+}
+
 // AI model configuration
 export interface AIModel {
   id: string;
@@ -30,7 +37,7 @@ export interface AIModel {
   supported_features: string[];
   max_images?: number; // Maximum images the model can process
   resolution?: string; // Default resolution
-  quality?: "standard" | "hd"; // OpenAI quality setting
+  quality?: GenerationOptions["quality"]; // OpenAI quality setting
 }
 
 // Style preset configuration
