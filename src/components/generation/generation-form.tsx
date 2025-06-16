@@ -180,8 +180,6 @@ export function GenerationForm({
     }
   }, [validationErrors, navigateToErrorTab]);
 
-  console.log("Form watched product images:", watchedValues.productImages);
-
   return (
     <div className={cn(className)}>
       {/* Main Form */}
@@ -235,6 +233,7 @@ export function GenerationForm({
               <Card>
                 <CardContent>
                   <MultiImageUpload
+                    value={watchedValues.productImages || []}
                     onImagesChange={(urls: string[]) => {
                       setValue("productImages", urls);
                       // Clear validation errors when images are uploaded
@@ -263,6 +262,7 @@ export function GenerationForm({
               <Card>
                 <CardContent>
                   <MultiImageUpload
+                    value={watchedValues.modelImages || []}
                     onImagesChange={(urls: string[]) => {
                       setValue("modelImages", urls);
                       // Clear validation errors when images are uploaded
@@ -382,36 +382,6 @@ export function GenerationForm({
                   setValue("aspectRatio", value);
                 }}
               />
-              {/* <Card>
-                <CardHeader>
-                  <CardTitle>Aspect Ratio</CardTitle>
-                  <CardDescription>
-                    Select the output image dimensions
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Select
-                    value={watchedValues.aspectRatio}
-                    onValueChange={(value) => {
-                      setValue(
-                        "aspectRatio",
-                        value as GenerationFormData["aspectRatio"]
-                      );
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1:1">Square (1:1)</SelectItem>
-                      <SelectItem value="16:9">Landscape (16:9)</SelectItem>
-                      <SelectItem value="9:16">Portrait (9:16)</SelectItem>
-                      <SelectItem value="3:2">Photo (3:2)</SelectItem>
-                      <SelectItem value="2:3">Portrait Photo (2:3)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </CardContent>
-              </Card> */}
             </TabsContent>
 
             <TabsContent value="advanced" className="space-y-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import { useDropzone, FileRejection } from "react-dropzone";
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/ui/icons";
@@ -19,6 +19,7 @@ interface UploadedImage {
 
 interface MultiImageUploadProps {
   onImagesChange: (urls: string[]) => void;
+  value?: string[]; // Current image URLs from form state
   accept?: Record<string, string[]>;
   maxSize?: number;
   maxImages?: number;
@@ -32,6 +33,7 @@ interface MultiImageUploadProps {
 
 export function MultiImageUpload({
   onImagesChange,
+  value = [],
   accept = { "image/*": [".jpg", ".jpeg", ".png", ".webp"] },
   maxSize = 10 * 1024 * 1024, // 10MB
   maxImages = 5,
@@ -45,6 +47,37 @@ export function MultiImageUpload({
   const [uploading, setUploading] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const lastValueRef = useRef<string[]>([]);
+
+  // Sync internal state with form values when component mounts or values change
+  useEffect(() => {
+    const currentValue = value || [];
+    const lastValue = lastValueRef.current;
+
+    // Only update if the URLs have actually changed
+    if (
+      JSON.stringify(currentValue.sort()) !== JSON.stringify(lastValue.sort())
+    ) {
+      lastValueRef.current = currentValue;
+
+      if (currentValue.length > 0) {
+        // Create UploadedImage objects from the form URLs
+        const imagesFromUrls: UploadedImage[] = currentValue.map(
+          (url, index) => ({
+            id: `existing-${index}-${url.split("/").pop()}`, // Create unique ID from URL
+            url,
+            publicId: url.split("/").pop()?.split(".")[0] || "", // Extract publicId from URL
+            file: new File([], url.split("/").pop() || `image-${index}.jpg`), // Create dummy file
+          })
+        );
+
+        setUploadedImages(imagesFromUrls);
+      } else {
+        // Clear uploaded images if form value is empty
+        setUploadedImages([]);
+      }
+    }
+  }, [value]);
 
   console.log("uploadedImages", uploadedImages);
 
