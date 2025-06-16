@@ -8,6 +8,7 @@ export const API_ERROR_CODES = {
   // Authentication Errors (4xx)
   AUTHENTICATION_REQUIRED: "AUTHENTICATION_REQUIRED",
   USER_NOT_FOUND: "USER_NOT_FOUND",
+  UNAUTHORIZED: "UNAUTHORIZED",
 
   // Validation Errors (4xx)
   VALIDATION_ERROR: "VALIDATION_ERROR",
@@ -17,11 +18,14 @@ export const API_ERROR_CODES = {
   INSUFFICIENT_TOKENS: "INSUFFICIENT_TOKENS",
   RATE_LIMIT_EXCEEDED: "RATE_LIMIT_EXCEEDED",
   MODEL_ERROR: "MODEL_ERROR",
+  GENERATION_NOT_FOUND: "GENERATION_NOT_FOUND",
+  INVALID_GENERATION_STATUS: "INVALID_GENERATION_STATUS",
 
   // Service Errors (5xx)
   QUEUE_FULL: "QUEUE_FULL",
   SERVER_ERROR: "SERVER_ERROR",
   SERVICE_UNAVAILABLE: "SERVICE_UNAVAILABLE",
+  INTERNAL_SERVER_ERROR: "INTERNAL_SERVER_ERROR",
 
   // OPEN AI ERRORs
   OPENAI_ERROR: "OPENAI_ERROR",
@@ -37,14 +41,18 @@ export type APIErrorCode =
 export const ERROR_STATUS_CODES = {
   [API_ERROR_CODES.AUTHENTICATION_REQUIRED]: 401,
   [API_ERROR_CODES.USER_NOT_FOUND]: 404,
+  [API_ERROR_CODES.UNAUTHORIZED]: 403,
   [API_ERROR_CODES.VALIDATION_ERROR]: 400,
   [API_ERROR_CODES.IMAGE_VALIDATION_ERROR]: 400,
   [API_ERROR_CODES.INSUFFICIENT_TOKENS]: 400,
   [API_ERROR_CODES.RATE_LIMIT_EXCEEDED]: 429,
   [API_ERROR_CODES.MODEL_ERROR]: 400,
+  [API_ERROR_CODES.GENERATION_NOT_FOUND]: 404,
+  [API_ERROR_CODES.INVALID_GENERATION_STATUS]: 400,
   [API_ERROR_CODES.QUEUE_FULL]: 503,
   [API_ERROR_CODES.SERVER_ERROR]: 500,
   [API_ERROR_CODES.SERVICE_UNAVAILABLE]: 503,
+  [API_ERROR_CODES.INTERNAL_SERVER_ERROR]: 500,
   [API_ERROR_CODES.OPENAI_ERROR]: 500,
   [API_ERROR_CODES.IMAGE_GENERATION_ERROR]: 500,
 } as const;
@@ -63,6 +71,11 @@ export const ERROR_MESSAGES = {
     message:
       "Your user account could not be found. Please try signing in again.",
     action: "Sign In",
+  },
+  [API_ERROR_CODES.UNAUTHORIZED]: {
+    title: "Unauthorized",
+    message: "You don't have permission to access this resource.",
+    action: "Contact Support",
   },
   [API_ERROR_CODES.VALIDATION_ERROR]: {
     title: "Invalid Request",
@@ -94,6 +107,16 @@ export const ERROR_MESSAGES = {
       "There was an issue with the selected AI model or its configuration. Please try a different model.",
     action: "Change Model",
   },
+  [API_ERROR_CODES.GENERATION_NOT_FOUND]: {
+    title: "Generation Not Found",
+    message: "The requested generation could not be found.",
+    action: "Try Again",
+  },
+  [API_ERROR_CODES.INVALID_GENERATION_STATUS]: {
+    title: "Invalid Generation Status",
+    message: "This generation cannot be processed in its current state.",
+    action: "Create New",
+  },
   [API_ERROR_CODES.QUEUE_FULL]: {
     title: "Service Busy",
     message:
@@ -109,6 +132,11 @@ export const ERROR_MESSAGES = {
   [API_ERROR_CODES.SERVICE_UNAVAILABLE]: {
     title: "Service Unavailable",
     message: "The service is temporarily unavailable. Please try again later.",
+    action: "Try Again",
+  },
+  [API_ERROR_CODES.INTERNAL_SERVER_ERROR]: {
+    title: "Internal Server Error",
+    message: "An internal error occurred. Please try again later.",
     action: "Try Again",
   },
   [API_ERROR_CODES.OPENAI_ERROR]: {

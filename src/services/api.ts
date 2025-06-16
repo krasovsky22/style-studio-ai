@@ -9,6 +9,7 @@ import { FileCategory } from "@/convex/types";
 export const API_ENDPOINTS = {
   // Generation endpoints
   GENERATE: "/api/generate",
+  GENERATION_CREATE: "/api/generation/create",
 
   // Upload endpoints
   UPLOAD: "/api/upload",
@@ -22,7 +23,49 @@ export const API_ENDPOINTS = {
  */
 export const GenerationService = {
   /**
-   * Create a new generation request
+   * Create a new generation record
+   */
+  async createRecord(data: {
+    productImages: string[];
+    modelImages?: string[];
+    model: string;
+    style: string;
+    quality: string;
+    aspectRatio: string;
+    customPrompt?: string;
+    parameters?: Record<string, unknown>;
+  }) {
+    return apiRequest(
+      API_ENDPOINTS.GENERATION_CREATE,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+      ErrorHandlers.forForm({
+        customMessage:
+          "Failed to create generation record. Please check your inputs and try again.",
+      })
+    );
+  },
+
+  /**
+   * Process an existing generation
+   */
+  async processGeneration(generationId: string) {
+    return apiRequest(
+      API_ENDPOINTS.GENERATE,
+      {
+        method: "POST",
+        body: JSON.stringify({ generationId }),
+      },
+      ErrorHandlers.forForm({
+        customMessage: "Failed to process generation. Please try again.",
+      })
+    );
+  },
+
+  /**
+   * Create a new generation request (legacy - for backward compatibility)
    */
   async create(data: {
     productImages: string[];

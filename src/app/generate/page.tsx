@@ -59,34 +59,91 @@ export default function GeneratePage() {
     setIsGenerating(true);
 
     try {
-      // Add timeout to prevent hanging requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 300000); // 300 second timeout
+      // Step 1: Create generation record
+      const createController = new AbortController();
+      const createTimeoutId = setTimeout(() => createController.abort(), 30000); // 30 second timeout for creation
+
+      const createResponse = await fetch("/api/generation/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(options),
+        signal: createController.signal,
+      });
+
+      clearTimeout(createTimeoutId);
+
+      let createResponseData;
+      try {
+        createResponseData = await createResponse.json();
+      } catch (jsonError) {
+        console.error("Failed to parse creation response as JSON:", jsonError);
+        const errorInfo: ResponseErrorType = {
+          message: `Server returned invalid response (${createResponse.status}: ${createResponse.statusText})`,
+          code: "INVALID_RESPONSE",
+          details: `Response status: ${createResponse.status}`,
+        };
+        setLastError(errorInfo);
+        toast.error(
+          "Server error during generation creation. Please try again later."
+        );
+        return;
+      }
+
+      // Check if creation was successful
+      if (!createResponse.ok || !createResponseData.success) {
+        const errorInfo: ResponseErrorType = {
+          code: createResponseData.code,
+          validationErrors: createResponseData.validationErrors,
+        };
+        console.log("Generation creation failed", errorInfo);
+        setLastError(errorInfo);
+        return;
+      }
+
+      const { generationId } = createResponseData.data;
+
+      // Step 2: Set the current generation for status tracking
+      setCurrentGeneration(generationId);
+      toast.success("Generation record created! Starting processing...");
+
+      // Step 3: Start processing the generation
+      const processController = new AbortController();
+      const processTimeoutId = setTimeout(
+        () => processController.abort(),
+        300000
+      ); // 5 minute timeout for processing
 
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(options),
-        signal: controller.signal,
+        body: JSON.stringify({ generationId }),
+        signal: processController.signal,
       });
 
-      clearTimeout(timeoutId);
+      clearTimeout(processTimeoutId);
+
+      clearTimeout(processTimeoutId);
 
       let responseData;
       try {
         responseData = await response.json();
       } catch (jsonError) {
         // Handle cases where the response is not valid JSON
-        console.error("Failed to parse response as JSON:", jsonError);
+        console.error(
+          "Failed to parse processing response as JSON:",
+          jsonError
+        );
         const errorInfo: ResponseErrorType = {
           message: `Server returned invalid response (${response.status}: ${response.statusText})`,
           code: "INVALID_RESPONSE",
           details: `Response status: ${response.status}`,
         };
         setLastError(errorInfo);
-        toast.error("Server error. Please try again later.");
+        toast.error("Server error during processing. Please try again later.");
         return;
       }
 
@@ -97,18 +154,18 @@ export default function GeneratePage() {
           validationErrors: responseData.validationErrors,
         };
 
-        console.log("setting last error", errorInfo);
+        console.log("Generation processing failed", errorInfo);
         setLastError(errorInfo);
-
         return;
       }
 
-      const { id, resultImages } = responseData.data;
-      // Success case
-      setCurrentGeneration(id);
+      const { resultImages } = responseData.data;
+      // Success case - generation is now processing
       setResultedImages(resultImages || []);
       setLastError(null); // Clear any previous errors on success
-      toast.success("Generation started!");
+      toast.success(
+        "Generation processing started! Watch for real-time updates."
+      );
     } catch (error) {
       console.error("Generation failed:", error);
 
@@ -118,7 +175,7 @@ export default function GeneratePage() {
 
       if (error instanceof Error && error.name === "AbortError") {
         errorInfo = {
-          message: "Request timed out after 30 seconds",
+          message: "Request timed out",
           code: "TIMEOUT_ERROR",
         };
         userMessage = "Request timed out. Please try again.";

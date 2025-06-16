@@ -2,17 +2,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@/convex/_generated/api";
 
-import { GenerationFormData, generationSchema } from "@/lib/validations";
 import { API_ERROR_CODES } from "@/constants/api-errors";
-
-import { validateImageUrls } from "@/services/cloudinary";
 import { createErrorResponse } from "@/app/utils/response";
 import { imageGenerationService } from "@/services/image-generation";
 import { Id } from "@/convex/_generated/dataModel";
+import { z } from "zod";
 
-// Reuse validation schema from lib/validations.ts for consistency
-const generateRequestSchema = generationSchema;
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+
+// Request schema for processing generation
+const processGenerationSchema = z.object({
+  generationId: z.string().min(1, "Generation ID is required"),
+});
 
 // Main POST Handler Implementation
 export async function POST(request: NextRequest) {
@@ -29,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     // Step 2: Parse and Validate Request Body
     const body = await request.json();
-    const validationResult = generateRequestSchema.safeParse(body);
+    const validationResult = processGenerationSchema.safeParse(body);
 
     if (!validationResult.success) {
       const validationErrors = validationResult.error.errors.map((err) => ({
@@ -45,51 +49,66 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const validatedData: GenerationFormData = validationResult.data;
+    const { generationId } = validationResult.data;
 
-    if (!validatedData) {
+    // Step 3: Get Generation Record
+    const generation = await convex.query(api.generations.getGeneration, {
+      id: generationId as Id<"generations">,
+    });
+
+    if (!generation) {
       return createErrorResponse({
-        error: "Invalid request data",
-        code: API_ERROR_CODES.VALIDATION_ERROR,
+        error: "Generation not found",
+        code: API_ERROR_CODES.GENERATION_NOT_FOUND,
+        statusCode: 404,
+      });
+    }
+
+    // Step 4: Verify User Owns Generation
+    if (generation.userId !== session.user.id) {
+      return createErrorResponse({
+        error: "Unauthorized access to generation",
+        code: API_ERROR_CODES.UNAUTHORIZED,
+        statusCode: 403,
+      });
+    }
+
+    // Step 5: Check Generation Status
+    if (generation.status !== "pending") {
+      return createErrorResponse({
+        error: `Generation is already ${generation.status}`,
+        code: API_ERROR_CODES.INVALID_GENERATION_STATUS,
         statusCode: 400,
       });
     }
 
-    // Step 4: Image URL Validation
-    await validateImageUrls([
-      ...validatedData.productImages,
-      ...(validatedData.modelImages ?? []),
-    ]);
-
-    const { generationId, resultImages } =
-      await imageGenerationService.processImageGeneration(
-        validatedData,
+    // Step 6: Process Generation with Service
+    const { resultImages } =
+      await imageGenerationService.processExistingGeneration(
+        generation._id,
         session.user.id as Id<"users">
       );
 
-    // Step 12: Return Success Response
+    // Step 7: Return Success Response
     return NextResponse.json(
       {
         success: true,
         data: {
-          id: generationId,
+          generationId: generation._id,
           resultImages,
-
-          //   status: "pending" as const,
-          //   estimatedCost: tokenCost,
-          //   estimatedTime: getEstimatedTime(validatedData.quality),
-          //   queuePosition: await getQueuePosition(),
-          //   remainingTokens: tokenValidation.availableTokens - tokenCost,
+          status: "processing",
+          message: "Generation processing started successfully",
         },
       },
-      { status: 201 }
+      { status: 200 }
     );
   } catch (error: unknown) {
+    console.error("Generation processing failed:", error);
+
     return createErrorResponse({
-      error: "Unable to generate image",
+      error: "Unable to process generation",
       code: API_ERROR_CODES.IMAGE_GENERATION_ERROR,
       statusCode: 500,
-      ...(error as object),
     });
   }
 }

@@ -108,3 +108,68 @@ export const MODEL_DESCRIPTIONS = {
   ].join(", "),
   minimal: ["model", "person", "individual", "subject"].join(", "),
 };
+
+/**
+ * Generate optimized prompt for image generation
+ */
+export async function generateOptimizedPrompt(data: {
+  productImages?: string[];
+  modelImages?: string[];
+  style: string;
+  customPrompt?: string;
+  parameters?: Record<string, unknown>;
+}): Promise<string> {
+  const { style, productImages, modelImages, customPrompt } = data;
+
+  // Type-safe style access
+  const styleKey = style as keyof typeof STYLE_VARIATIONS;
+  const styleVariation = STYLE_VARIATIONS[styleKey];
+  const modelDescription = MODEL_DESCRIPTIONS[styleKey];
+
+  // Base prompt components
+  let prompt = "";
+
+  // If we have both product and model images, create a specific outfit visualization prompt
+  if (
+    productImages &&
+    productImages.length > 0 &&
+    modelImages &&
+    modelImages.length > 0
+  ) {
+    prompt = `Generate an image showing the specific outfit/clothing from the provided product images being worn by the person from the model images. `;
+    prompt += `Style: ${styleVariation?.modifiers || "realistic"}, ${styleVariation?.setting || "professional photography"}. `;
+    prompt += `Ensure the clothing fits naturally on the model while maintaining the original design and details of the outfit. `;
+  }
+  // If we only have product images, describe them being worn by a generic model
+  else if (productImages && productImages.length > 0) {
+    prompt = `Generate an image of the specific outfit/clothing from the provided product images being worn by a ${modelDescription || "model"}. `;
+    prompt += `${styleVariation?.modifiers || "realistic style"}, ${styleVariation?.setting || "professional photography"}. `;
+    prompt += `Show the clothing naturally worn while maintaining all original design details and colors. `;
+  }
+  // If we only have model images, create a fashion shoot with stylish clothing
+  else if (modelImages && modelImages.length > 0) {
+    prompt = `Create a fashion photograph of the person from the model images wearing stylish, fashionable clothing. `;
+    prompt += `${styleVariation?.modifiers || "realistic style"}, ${styleVariation?.setting || "professional photography"}. `;
+    prompt += `The outfit should complement the person's style and the overall aesthetic. `;
+  }
+  // Fallback to original prompt structure
+  else {
+    prompt = `A stylish outfit elegantly worn by a ${modelDescription || "model"}, `;
+    prompt += `${styleVariation?.modifiers || "realistic style"}, ${styleVariation?.setting || "professional photography"}. `;
+  }
+
+  // Add professional photography context
+  prompt += `Professional fashion photography, high quality`;
+
+  // Add custom prompt if provided
+  if (customPrompt) {
+    prompt += `, ${customPrompt}`;
+  }
+
+  // Add style-specific modifiers
+  if (style === "high") {
+    prompt += ", high resolution, detailed fabric textures, sharp focus";
+  }
+
+  return prompt;
+}

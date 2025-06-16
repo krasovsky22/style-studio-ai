@@ -29,7 +29,18 @@
 - Custom components (`StatsCard`, `EmptyState`, `LoadingSpinner`)
 - Toast notification system integrated
 
-🔄 **Ready for Week 4 - Image Upload & Management System**
+✅ **Two-Step Generation Flow Implementation: COMPLETED** (June 16, 2025)
+
+- `/api/generation/create` endpoint for generation record creation
+- Updated `/api/generate` endpoint for processing existing generations
+- Real-time status tracking with Convex subscriptions
+- Enhanced token management with optimistic deduction
+- Improved error handling and validation
+- Type-safe generation flow with comprehensive error codes
+- Frontend two-step submission process implementation
+- Enhanced `ImageGenerationService` with existing generation processing
+
+🔄 **Week 4 - Image Upload & Management System: IN PROGRESS**
 
 ### Technology Stack Summary
 

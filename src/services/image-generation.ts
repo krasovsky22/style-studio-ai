@@ -148,6 +148,143 @@ export class ImageGenerationService {
     }
   }
 
+  /**
+   * Process an existing generation record (used when generation ID is provided)
+   */
+  async processExistingGeneration(
+    generationId: Id<"generations">,
+    userId: Id<"users">
+  ) {
+    try {
+      // Get the generation record
+      const generation = await this.convex.query(
+        api.generations.getGeneration,
+        {
+          id: generationId,
+        }
+      );
+
+      if (!generation) {
+        throw new ImageGenerationError(
+          "Generation not found",
+          API_ERROR_CODES.GENERATION_NOT_FOUND,
+          404
+        );
+      }
+
+      // Verify ownership
+      if (generation.userId !== userId) {
+        throw new ImageGenerationError(
+          "Unauthorized access to generation",
+          API_ERROR_CODES.UNAUTHORIZED,
+          403
+        );
+      }
+
+      // Update generation status to processing
+      await this.convex.mutation(api.generations.updateGenerationStatus, {
+        generationId,
+        status: "processing",
+      });
+
+      console.log("Starting existing generation processing...", {
+        generationId,
+        productImageCount: generation.productImages?.length || 0,
+        modelImageCount: generation.modelImages?.length || 0,
+      });
+
+      // Reconstruct form data from generation record
+      const formData: GenerationFormData = {
+        productImages: generation.productImages || [],
+        modelImages: generation.modelImages || [],
+        customPrompt: "", // Not stored separately, already in prompt
+        style:
+          (generation.parameters.style as GenerationFormData["style"]) ||
+          "realistic",
+        quality:
+          (generation.parameters.quality as GenerationFormData["quality"]) ||
+          "auto",
+        aspectRatio:
+          (generation.parameters
+            .aspectRatio as GenerationFormData["aspectRatio"]) || "1:1",
+        model: generation.parameters.model,
+        parameters: {
+          guidance_scale: generation.parameters.guidance_scale || 7.5,
+          num_inference_steps: generation.parameters.num_inference_steps || 50,
+          strength: generation.parameters.strength || 0.8,
+          seed: generation.parameters.seed || 0,
+        },
+      };
+
+      // Generate images using the stored prompt
+      const { success, images } = await generateImages({
+        ...formData,
+        prompt: generation.prompt,
+      });
+
+      if (!success || !images.length) {
+        throw new ImageGenerationError(
+          "Failed to generate images",
+          API_ERROR_CODES.IMAGE_GENERATION_ERROR,
+          500,
+          { generationId }
+        );
+      }
+
+      // Upload resulted images to Cloudinary and update generation record
+      const resultImageUrls: string[] = [];
+
+      for (const image of images) {
+        const { public_id, secure_url } = await uploadImageBuffer(
+          image,
+          `${userId}_${generationId}_${Date.now()}`,
+          {
+            folder: CLOUDINARY_CONFIG.folders.generations,
+          }
+        );
+        resultImageUrls.push(secure_url);
+        console.log("Generated image uploaded:", { public_id, secure_url });
+      }
+
+      // Update generation record with result URLs and mark as completed
+      await this.convex.mutation(api.generations.updateGenerationStatus, {
+        generationId,
+        status: "completed",
+        resultImages: resultImageUrls,
+      });
+
+      console.log("Generation completed successfully:", {
+        generationId,
+        imageCount: resultImageUrls.length,
+      });
+
+      return {
+        success: true,
+        generationId,
+        resultImages: resultImageUrls,
+      };
+    } catch (error) {
+      console.error("Error during existing generation processing:", error);
+
+      // Mark generation as failed and provide error details
+      await this.convex.mutation(api.generations.updateGenerationStatus, {
+        generationId,
+        status: "failed",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unknown error during generation",
+      });
+
+      throw new ImageGenerationError(
+        "Failed to complete generation processing",
+        API_ERROR_CODES.IMAGE_GENERATION_ERROR,
+        500,
+        { generationId, error: String(error) }
+      );
+    }
+  }
+
   // Prompt Generation
   private async generatePrompt(data: GenerationFormData): Promise<string> {
     const { style, quality, productImages, modelImages } = data;
