@@ -33,6 +33,8 @@ export function ImageWithLoader({
   const downloadImage = (imageUrl: string) => {
     const link = document.createElement("a");
     link.href = imageUrl;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
     link.download = `generation.jpg`;
     link.click();
   };

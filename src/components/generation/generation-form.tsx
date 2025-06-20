@@ -91,7 +91,7 @@ export function GenerationForm({
   const watchedValues = watch();
 
   const estimatedCost = AI_MODELS[watchedValues.model].cost; // Use model cost instead of quality cost
-  const canGenerate = tokenBalance >= estimatedCost && !isSubmitting;
+  const canGenerate = tokenBalance >= estimatedCost;
 
   // Simple client-side validation for immediate feedback
   const validateForm = (): { valid: boolean; errors: string[] } => {
