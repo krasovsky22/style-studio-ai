@@ -20,11 +20,9 @@ export function AppLayout({
   return (
     <div className="bg-background min-h-screen">
       <Header />
-      <div className={cn("flex", className)}>
+      <div className={cn("flex", "mt-3", className)}>
         {showSidebar && <Sidebar />}
-        <main className={cn("flex-1", showSidebar && "lg:pl-64")}>
-          {children}
-        </main>
+        <main className={cn("mx-5 flex-1")}>{children}</main>
       </div>
       <Toaster />
     </div>

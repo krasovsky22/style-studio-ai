@@ -66,7 +66,7 @@ export function Sidebar() {
   const tokenBalance = 0; // Will be implemented with token
 
   return (
-    <div className="bg-background fixed inset-y-0 left-0 z-30 hidden w-64 border-r lg:block">
+    <div className="bg-background inset-y-0 left-0 z-30 hidden w-64 border-r lg:block">
       <div className="flex h-full flex-col">
         {/* Token Balance Card */}
         <div className="p-4">

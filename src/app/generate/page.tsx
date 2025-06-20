@@ -22,6 +22,7 @@ import { GenerationOptions } from "@/types/generation";
 import { toast } from "sonner";
 import { useConvexAuth } from "@/hooks/use-convex-auth";
 import GettingStartedCard from "@/components/generation/getting-started-card";
+import { AppLayout } from "@/components/layout/app-layout";
 
 interface ResponseErrorType {
   message?: string;
@@ -277,8 +278,7 @@ export default function GeneratePage() {
   }
 
   return (
-    <div className="bg-background min-h-screen">
-      <Header />
+    <AppLayout showSidebar>
       <div className="container mx-auto space-y-8 py-8">
         {/* Header */}
         <div className="space-y-2">
@@ -431,7 +431,6 @@ export default function GeneratePage() {
                 <CardContent>
                   <ImageGallery
                     images={resultedImages}
-                    generationId="preview"
                     aspectRatio="square"
                     showActions={true}
                     maxColumns={2}
@@ -463,6 +462,6 @@ export default function GeneratePage() {
           </div>
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 }

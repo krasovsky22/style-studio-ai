@@ -7,7 +7,7 @@ import { Sparkles } from "lucide-react";
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-50 w-full px-3 text-white backdrop-blur">
+    <header className="bg-primary sticky top-0 z-50 w-full px-3 text-white backdrop-blur">
       <div className="flex h-14 items-center">
         <div className="mr-4 hidden md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
