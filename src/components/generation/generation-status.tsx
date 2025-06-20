@@ -77,6 +77,13 @@ const statusConfig: Record<GenerationStatus, StatusConfigType> = {
     color: "bg-yellow-500",
     progress: 50,
   },
+  uploading: {
+    label: "Uploading",
+    description: "Uploading resulted images...",
+    icon: Icons.Clock,
+    color: "bg-blue-500",
+    progress: 75,
+  },
   completed: {
     label: "Completed",
     description: "Generation finished successfully!",
@@ -131,6 +138,9 @@ export function GenerationStatusDisplay({
       switch (generation.status) {
         case "processing":
           toast.info("Generation started");
+          break;
+        case "uploading":
+          toast.info("Uploading resulted images");
           break;
         case "completed":
           toast.success("Generation completed!");
@@ -235,21 +245,14 @@ export function GenerationStatusDisplay({
         )}
 
         {/* Result Images */}
-        {generation.status === "completed" &&
-          (generation.resultImages?.length || generation.resultImageUrl) && (
-            <ImageGallery
-              images={
-                generation.resultImages?.length
-                  ? generation.resultImages
-                  : [generation.resultImageUrl!]
-              }
-              generationId={generation._id}
-              aspectRatio="square"
-              showActions={true}
-              maxColumns={2}
-            />
-          )}
-
+        <ImageGallery
+          showLoader
+          images={generation.resultImageUrls || []}
+          generationId={generation._id}
+          aspectRatio="square"
+          showActions={true}
+          maxColumns={2}
+        />
         {/* Retry Button for Failed Generations */}
         {generation.status === "failed" && (
           <Button

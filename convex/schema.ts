@@ -29,6 +29,7 @@ export default defineSchema({
     userId: v.id("users"),
     status: v.union(
       v.literal("pending"),
+      v.literal("uploading"),
       v.literal("processing"),
       v.literal("completed"),
       v.literal("failed"),
@@ -40,7 +41,6 @@ export default defineSchema({
     // Backward compatibility fields (single images)
     productImageUrl: v.optional(v.string()),
     modelImageUrl: v.optional(v.string()),
-    resultImageUrl: v.optional(v.string()),
 
     // Enhanced multiple image support
     productImages: v.optional(v.array(v.string())), // Array of Cloudinary URLs

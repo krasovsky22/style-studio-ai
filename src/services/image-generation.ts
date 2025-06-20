@@ -187,7 +187,7 @@ export class ImageGenerationService {
         status: "processing",
       });
 
-      console.log("Starting existing generation processing...", {
+      console.log("Starting generation processing...", {
         generationId,
         productImageCount: generation.productImages?.length || 0,
         modelImageCount: generation.modelImages?.length || 0,
@@ -220,6 +220,12 @@ export class ImageGenerationService {
       const { success, images } = await generateImages({
         ...formData,
         prompt: generation.prompt,
+      });
+
+      // Update generation status to processing
+      await this.convex.mutation(api.generations.updateGenerationStatus, {
+        generationId,
+        status: "uploading",
       });
 
       if (!success || !images.length) {

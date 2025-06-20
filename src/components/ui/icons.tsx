@@ -27,6 +27,7 @@ import {
   Palette,
   Copy,
   ExternalLink,
+  ImageOff,
 } from "lucide-react";
 import { SVGProps } from "react";
 
@@ -60,6 +61,7 @@ export const Icons = {
   loader2: Loader2,
   copy: Copy,
   externalLink: ExternalLink,
+  imageOff: ImageOff,
 
   // Capitalized versions for consistency
   Loader2,
@@ -89,6 +91,7 @@ export const Icons = {
   Palette,
   Copy,
   ExternalLink,
+  ImageOff,
 
   google: (props: SVGProps<SVGSVGElement>) => (
     <svg role="img" viewBox="0 0 24 24" {...props}>

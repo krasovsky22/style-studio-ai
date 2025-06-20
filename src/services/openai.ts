@@ -209,7 +209,7 @@ async function prepareDalleRequest(
     prompt: request.prompt.slice(0, OPENAI_CONFIG.maxTokens),
     // size: size as "1024x1024" | "1024x1792" | "1792x1024",
     // response_format: GENERATION_PARAMS.response_format,
-    n: 5, // DALL-E 3 only supports n=1
+    n: 3, // DALL-E 3 only supports n=1
   };
 
   // Add model-specific quality parameter (DALL-E 3 uses 'standard' or 'hd')

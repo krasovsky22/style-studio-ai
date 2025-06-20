@@ -15,13 +15,7 @@ export type CreateUserArgs = {
 // Generation types
 export type Generation = Doc<"generations">;
 export type GenerationId = Id<"generations">;
-
-export type GenerationStatus =
-  | "pending"
-  | "processing"
-  | "completed"
-  | "failed"
-  | "cancelled";
+export type GenerationStatus = Generation["status"];
 
 export type GenerationParameters = {
   model: string;

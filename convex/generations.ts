@@ -67,6 +67,7 @@ export const updateGenerationStatus = mutation({
     generationId: v.id("generations"),
     status: v.union(
       v.literal("processing"),
+      v.literal("uploading"),
       v.literal("completed"),
       v.literal("failed"),
       v.literal("cancelled")
@@ -589,6 +590,7 @@ export const getGenerationAnalytics = query({
       total: generations.length,
       byStatus: {
         pending: 0,
+        uploading: 0,
         processing: 0,
         completed: 0,
         failed: 0,
@@ -718,6 +720,7 @@ export const getUserGenerationsWithFiles = query({
     status: v.optional(
       v.union(
         v.literal("pending"),
+        v.literal("uploading"),
         v.literal("processing"),
         v.literal("completed"),
         v.literal("failed"),

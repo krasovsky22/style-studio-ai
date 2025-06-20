@@ -11,34 +11,33 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Icons } from "@/components/ui/icons";
+import { ImageWithLoader } from "@/components/ui/image-with-loader";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface ImageGalleryProps {
-  images: string[];
+  images?: string[];
   generationId: string;
   className?: string;
   aspectRatio?: "square" | "video" | "auto";
   showActions?: boolean;
   maxColumns?: 2 | 3 | 4;
+  showLoader?: boolean;
 }
 
 export function ImageGallery({
-  images,
+  images = [],
   generationId,
   className,
   aspectRatio = "square",
   showActions = true,
   maxColumns = 3,
+  showLoader = false,
 }: ImageGalleryProps) {
   const [selectedImage, setSelectedImage] = useState<{
     url: string;
     index: number;
   } | null>(null);
-
-  if (!images || images.length === 0) {
-    return null;
-  }
 
   const getGridColumns = () => {
     if (images.length === 1) return "grid-cols-1";
@@ -60,6 +59,36 @@ export function ImageGallery({
         return "aspect-square";
     }
   };
+
+  if (showLoader && (!images || images.length === 0)) {
+    return (
+      <div className={cn("space-y-3", className)}>
+        <div className="flex items-center gap-2">
+          <h4 className="text-sm font-medium">Generated Images</h4>
+          <Badge variant="secondary" className="text-xs">
+            Loading...
+          </Badge>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3">
+          <div
+            className={cn(
+              "bg-muted relative overflow-hidden rounded-lg border",
+              getAspectRatio()
+            )}
+          >
+            <div className="flex h-full items-center justify-center">
+              <Icons.Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!images || images.length === 0) {
+    return null;
+  }
 
   const downloadImage = (imageUrl: string, index: number) => {
     const link = document.createElement("a");
@@ -156,7 +185,7 @@ export function ImageGallery({
                 getAspectRatio()
               )}
             >
-              <Image
+              <ImageWithLoader
                 src={imageUrl}
                 alt={`Generated result ${index + 1}`}
                 fill
