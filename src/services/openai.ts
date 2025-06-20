@@ -34,6 +34,8 @@ import OpenAI from "openai";
 import { AI_MODELS, OPENAI_CONFIG } from "@/constants/openai";
 import { API_ERROR_CODES, APIErrorCode } from "@/constants/api-errors";
 import { GenerationOptions } from "@/types/generation";
+import { generateMockImages } from "./mock-image-generation";
+import { isMockImageGenerationEnabled } from "@/lib/environment";
 
 // Custom Error Class for OpenAI operations
 class OpenAIError extends Error {
@@ -101,6 +103,12 @@ export interface ImageGenerationResponse {
 export async function generateImages(
   request: ImageGenerationRequest
 ): Promise<ImageGenerationResponse> {
+  // Check if mock mode is enabled
+  if (isMockImageGenerationEnabled) {
+    console.log("🎭 Mock mode enabled - using placeholder images");
+    return generateMockImages(request);
+  }
+
   try {
     const startTime = Date.now();
 

@@ -247,8 +247,7 @@ export function GenerationStatusDisplay({
         {/* Result Images */}
         <ImageGallery
           showLoader
-          images={generation.resultImageUrls || []}
-          generationId={generation._id}
+          images={generation.resultImages || []}
           aspectRatio="square"
           showActions={true}
           maxColumns={2}

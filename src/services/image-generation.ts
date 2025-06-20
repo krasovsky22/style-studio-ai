@@ -97,6 +97,7 @@ export class ImageGenerationService {
       // STEP 10: Upload resulted images to Cloudinary and update generation record
       const resultImageUrls: string[] = [];
 
+      console.log("Uploading generated images to Cloudinary...", images);
       for (const image of images) {
         const { public_id, secure_url } = await uploadImageBuffer(
           image,

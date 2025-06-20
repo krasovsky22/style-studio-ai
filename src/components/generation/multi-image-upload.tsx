@@ -79,8 +79,6 @@ export function MultiImageUpload({
     }
   }, [value]);
 
-  console.log("uploadedImages", uploadedImages);
-
   const uploadToServer = useCallback(
     async (file: File): Promise<{ url: string; publicId: string }> => {
       const formData = new FormData();
