@@ -1,17 +1,19 @@
 {
   "github.copilot.chat.codeGeneration.instructions": [
     {
-      "file": "/docs/development-roadmap.md",
-      "instructions": [
-        "When completing tasks mentioned in development-roadmap.md, automatically update the roadmap file by:",
-        "1. Changing [ ] to [x] for completed tasks",
-        "2. Adding ✅ COMPLETED markers for finished phases",
-        "3. Updating progress indicators (⏳ to ✅)",
-        "4. Adding completion dates in format (Month Day, Year)",
-        "5. Moving status from 'NEXT' to 'CURRENT' or 'COMPLETED' as appropriate",
-        "6. Always reference the exact task descriptions from the roadmap when marking completion",
-        "7. Update both individual tasks and their parent sections/phases when all sub-tasks are complete"
-      ]
+      "file": "docs/ai-agent-integration-guide.md"
+    },
+    {
+      "file": "docs/convex-api-methods.md"
+    },
+    {
+      "file": "docs/convex-api-reference.md"
+    },
+    {
+      "file": "docs/convex-configuration.md"
+    },
+    {
+      "file": "docs/convex-schema-overview.md"
     }
   ],
   "chat.mcp.discovery.enabled": true,
