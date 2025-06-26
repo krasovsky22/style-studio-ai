@@ -7,7 +7,7 @@
  */
 
 import { generateMockImages } from "../services/mock-image-generation";
-import { ImageGenerationRequest } from "../services/openai";
+import { ImageGenerationRequest } from "../lib/openai";
 
 /**
  * Test the primary system (Picsum Photos)

@@ -9,7 +9,7 @@
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { generateImages, calculateTokenCost } from "./openai";
+import { generateImages, calculateTokenCost } from "../lib/openai";
 import { API_ERROR_CODES, APIErrorCode } from "@/constants/api-errors";
 import { GenerationFormData } from "@/types/generation";
 import { userTokenHandler } from "./user-token-handler";
@@ -18,7 +18,7 @@ import {
   QUALITY_MODIFIERS,
   STYLE_VARIATIONS,
 } from "@/constants/prompts";
-import { CLOUDINARY_CONFIG, uploadImageBuffer } from "./cloudinary";
+import { fileManagementService } from "@/services/file-management";
 
 // Custom Error Class
 export class ImageGenerationError extends Error {
@@ -99,13 +99,13 @@ export class ImageGenerationService {
 
       console.log("Uploading generated images to Cloudinary...", images);
       for (const image of images) {
-        const { public_id, secure_url } = await uploadImageBuffer(
-          image,
-          `${userId}_${generationId}_${Date.now()}`,
-          {
-            folder: CLOUDINARY_CONFIG.folders.generations,
-          }
-        );
+        // Upload using file management service
+        const { public_id, secure_url } =
+          await fileManagementService.uploadImage(image, userId, {
+            category: "generated_image",
+            filename: `${userId}_${generationId}_${Date.now()}`,
+            generationId,
+          });
         resultImageUrls.push(secure_url);
         console.log("Generated image uploaded:", { public_id, secure_url });
       }
@@ -242,13 +242,13 @@ export class ImageGenerationService {
       const resultImageUrls: string[] = [];
 
       for (const image of images) {
-        const { public_id, secure_url } = await uploadImageBuffer(
-          image,
-          `${userId}_${generationId}_${Date.now()}`,
-          {
-            folder: CLOUDINARY_CONFIG.folders.generations,
-          }
-        );
+        // Upload using file management service
+        const { public_id, secure_url } =
+          await fileManagementService.uploadImage(image, userId, {
+            category: "generated_image",
+            filename: `${userId}_${generationId}_${Date.now()}`,
+            generationId,
+          });
         resultImageUrls.push(secure_url);
         console.log("Generated image uploaded:", { public_id, secure_url });
       }

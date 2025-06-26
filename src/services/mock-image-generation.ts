@@ -11,7 +11,7 @@
  * The fallback system ensures the mock generation always works, even offline.
  */
 
-import { ImageGenerationRequest, ImageGenerationResponse } from "./openai";
+import { ImageGenerationRequest, ImageGenerationResponse } from "../lib/openai";
 
 /**
  * Generates mock placeholder images as ArrayBuffers

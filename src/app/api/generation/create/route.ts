@@ -8,10 +8,10 @@ import { Id } from "@/convex/_generated/dataModel";
 
 import { GenerationFormData, generationSchema } from "@/lib/validations";
 import { API_ERROR_CODES } from "@/constants/api-errors";
-import { validateImageUrls } from "@/services/cloudinary";
+import { validateImageUrls } from "@/lib/cloudinary";
 import { createErrorResponse } from "@/app/utils/response";
 import { userTokenHandler } from "@/services/user-token-handler";
-import { calculateTokenCost } from "@/services/openai";
+import { calculateTokenCost } from "@/lib/openai";
 import { generateOptimizedPrompt } from "@/constants/prompts";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);

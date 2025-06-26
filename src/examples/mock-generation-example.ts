@@ -6,8 +6,8 @@
  * for development and testing purposes.
  */
 
-import { generateImages } from "@/services/openai";
-import { ImageGenerationRequest } from "@/services/openai";
+import { generateImages } from "@/lib/openai";
+import { ImageGenerationRequest } from "@/lib/openai";
 import { getEnvironmentInfo } from "@/lib/environment";
 
 /**

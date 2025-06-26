@@ -31,7 +31,7 @@ import { v2 as cloudinary } from "cloudinary";
 import { API_ERROR_CODES, APIErrorCode } from "@/constants/api-errors";
 
 // Custom Error Class for Cloudinary operations
-class CloudinaryError extends Error {
+export class CloudinaryError extends Error {
   constructor(
     message: string,
     public code: APIErrorCode,
