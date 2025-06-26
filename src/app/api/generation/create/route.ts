@@ -8,7 +8,6 @@ import { Id } from "@/convex/_generated/dataModel";
 
 import { GenerationFormData, generationSchema } from "@/lib/validations";
 import { API_ERROR_CODES } from "@/constants/api-errors";
-import { validateImageUrls } from "@/lib/cloudinary";
 import { createErrorResponse } from "@/app/utils/response";
 import { userTokenHandler } from "@/services/user-token-handler";
 import { calculateTokenCost } from "@/lib/openai";
@@ -60,19 +59,8 @@ export async function POST(request: NextRequest) {
 
     const validatedData: GenerationFormData = validationResult.data;
 
-    // Step 3: Image URL Validation
-    try {
-      await validateImageUrls([
-        ...validatedData.productImages,
-        ...(validatedData.modelImages ?? []),
-      ]);
-    } catch {
-      return createErrorResponse({
-        error: "Invalid image URLs provided",
-        code: API_ERROR_CODES.VALIDATION_ERROR,
-        statusCode: 400,
-      });
-    }
+    // Step 3: Image File ID Validation (we'll skip URL validation since we're using file references now)
+    // TODO: Add file ID existence validation if needed
 
     // Step 4: Calculate Token Cost
     const tokenCost = calculateTokenCost(
@@ -96,8 +84,8 @@ export async function POST(request: NextRequest) {
 
     // Step 6: Generate Optimized Prompt
     const optimizedPrompt = await generateOptimizedPrompt({
-      productImages: validatedData.productImages,
-      modelImages: validatedData.modelImages,
+      productImageFiles: validatedData.productImageFiles,
+      modelImageFiles: validatedData.modelImageFiles,
       style: validatedData.style,
       customPrompt: validatedData.customPrompt,
       parameters: validatedData.parameters,
@@ -108,8 +96,12 @@ export async function POST(request: NextRequest) {
       api.generations.createEnhancedGeneration,
       {
         userId: session.user.id as Id<"users">,
-        productImages: validatedData.productImages,
-        modelImages: validatedData.modelImages || [],
+        productImageFiles: validatedData.productImageFiles.map(
+          (id) => id as Id<"files">
+        ),
+        modelImageFiles: (validatedData.modelImageFiles || []).map(
+          (id) => id as Id<"files">
+        ),
         prompt: optimizedPrompt,
         parameters: {
           model: validatedData.model,

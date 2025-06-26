@@ -166,7 +166,6 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const publicId = searchParams.get("publicId");
     const fileId = searchParams.get("fileId");
 
     // Try to delete by fileId first (preferred), then by publicId
@@ -176,31 +175,11 @@ export async function DELETE(request: NextRequest) {
         session.user.id as Id<"users">
       );
       return NextResponse.json({ success: true });
-    } else if (publicId) {
-      // Find file by storage ID and delete
-      const fileRecord =
-        await fileManagementService.getFileByStorageId(publicId);
-      if (!fileRecord) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "File not found",
-            code: API_ERROR_CODES.USER_NOT_FOUND,
-          },
-          { status: 404 }
-        );
-      }
-
-      await fileManagementService.deleteFile(
-        fileRecord._id,
-        session.user.id as Id<"users">
-      );
-      return NextResponse.json({ success: true });
     } else {
       return NextResponse.json(
         {
           success: false,
-          error: "File ID or Public ID is required",
+          error: "File ID required",
           code: API_ERROR_CODES.VALIDATION_ERROR,
         },
         { status: 400 }

@@ -1,14 +1,14 @@
-import { Doc } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, action } from "./_generated/server";
 import { api } from "./_generated/api";
 import { v } from "convex/values";
 
-// Create a new generation request
+// Create a new generation request (updated for Convex v7 file references)
 export const createGeneration = mutation({
   args: {
     userId: v.id("users"),
-    productImages: v.array(v.id("files")),
-    modelImages: v.optional(v.array(v.id("files"))),
+    productImageFiles: v.array(v.id("files")),
+    modelImageFiles: v.optional(v.array(v.id("files"))),
     prompt: v.string(),
     parameters: v.object({
       model: v.string(),
@@ -33,13 +33,36 @@ export const createGeneration = mutation({
       );
     }
 
+    // Validate that all file references exist and belong to the user
+    const productFiles = await Promise.all(
+      args.productImageFiles.map((fileId) => ctx.db.get(fileId))
+    );
+
+    const modelFiles = args.modelImageFiles
+      ? await Promise.all(
+          args.modelImageFiles.map((fileId) => ctx.db.get(fileId))
+        )
+      : [];
+
+    // Check file ownership and existence
+    for (const file of [...productFiles, ...modelFiles]) {
+      if (!file) {
+        throw new Error("One or more files not found");
+      }
+      if (file.userId !== args.userId) {
+        throw new Error(
+          "Unauthorized: Cannot use files that don't belong to you"
+        );
+      }
+    }
+
     const generationId = await ctx.db.insert("generations", {
       userId: args.userId,
       status: "pending",
       createdAt: now,
-      productImages: args.productImages,
-      modelImages: args.modelImages || [],
-      resultImages: [],
+      productImageFiles: args.productImageFiles,
+      modelImageFiles: args.modelImageFiles || [],
+      resultImageFiles: [],
       prompt: args.prompt,
       parameters: args.parameters,
       tokensUsed: 0, // Will be set to 1 when generation completes successfully
@@ -61,7 +84,7 @@ export const createGeneration = mutation({
   },
 });
 
-// Update generation status
+// Update generation status (updated for file references)
 export const updateGenerationStatus = mutation({
   args: {
     generationId: v.id("generations"),
@@ -72,7 +95,7 @@ export const updateGenerationStatus = mutation({
       v.literal("failed"),
       v.literal("cancelled")
     ),
-    resultImages: v.optional(v.array(v.string())), // Changed to accept Cloudinary URLs
+    resultImageFiles: v.optional(v.array(v.id("files"))), // File references
     error: v.optional(v.string()),
     cloudinaryPublicId: v.optional(v.string()),
   },
@@ -92,8 +115,20 @@ export const updateGenerationStatus = mutation({
       updates.processingTime = now - generation.createdAt;
     }
 
-    if (args.resultImages) {
-      updates.resultImages = args.resultImages;
+    // Handle result files (preferred approach)
+    if (args.resultImageFiles) {
+      // Validate that all result files exist
+      const resultFiles = await Promise.all(
+        args.resultImageFiles.map((fileId) => ctx.db.get(fileId))
+      );
+
+      for (const file of resultFiles) {
+        if (!file) {
+          throw new Error("One or more result files not found");
+        }
+      }
+
+      updates.resultImageFiles = args.resultImageFiles;
     }
 
     if (args.error) {
@@ -261,7 +296,7 @@ export const processGenerationQueue = action({
   },
 });
 
-// Update generation from Replicate webhook/polling
+// Update generation from Replicate webhook/polling (enhanced for file references)
 export const updateFromReplicate = mutation({
   args: {
     generationId: v.id("generations"),
@@ -272,7 +307,7 @@ export const updateFromReplicate = mutation({
       v.literal("failed"),
       v.literal("cancelled")
     ),
-    resultImages: v.optional(v.array(v.string())), // Changed to accept Cloudinary URLs
+    resultImageFiles: v.optional(v.array(v.id("files"))), // File references
     error: v.optional(v.string()),
     processingTime: v.optional(v.number()),
   },
@@ -286,8 +321,20 @@ export const updateFromReplicate = mutation({
       status: args.status,
     };
 
-    if (args.resultImages) {
-      updateData.resultImages = args.resultImages;
+    // Handle result files (preferred approach)
+    if (args.resultImageFiles) {
+      // Validate that all result files exist
+      const resultFiles = await Promise.all(
+        args.resultImageFiles.map((fileId) => ctx.db.get(fileId))
+      );
+
+      for (const file of resultFiles) {
+        if (!file) {
+          throw new Error("One or more result files not found");
+        }
+      }
+
+      updateData.resultImageFiles = args.resultImageFiles;
     }
 
     if (args.error) {
@@ -343,12 +390,12 @@ export const updateFromReplicate = mutation({
   },
 });
 
-// Start a new generation with enhanced validation
+// Start a new generation with enhanced validation (updated for file references)
 export const startGeneration = mutation({
   args: {
     userId: v.id("users"),
-    productImages: v.array(v.id("files")),
-    modelImages: v.optional(v.array(v.id("files"))),
+    productImageFiles: v.array(v.id("files")),
+    modelImageFiles: v.optional(v.array(v.id("files"))),
     prompt: v.string(),
     negativePrompt: v.optional(v.string()),
     parameters: v.object({
@@ -375,14 +422,37 @@ export const startGeneration = mutation({
       );
     }
 
+    // Validate that all file references exist and belong to the user
+    const productFiles = await Promise.all(
+      args.productImageFiles.map((fileId) => ctx.db.get(fileId))
+    );
+
+    const modelFiles = args.modelImageFiles
+      ? await Promise.all(
+          args.modelImageFiles.map((fileId) => ctx.db.get(fileId))
+        )
+      : [];
+
+    // Check file ownership and existence
+    for (const file of [...productFiles, ...modelFiles]) {
+      if (!file) {
+        throw new Error("One or more files not found");
+      }
+      if (file.userId !== args.userId) {
+        throw new Error(
+          "Unauthorized: Cannot use files that don't belong to you"
+        );
+      }
+    }
+
     // Create generation record
     const generationId = await ctx.db.insert("generations", {
       userId: args.userId,
       status: "pending",
       createdAt: now,
-      productImages: args.productImages,
-      modelImages: args.modelImages || [],
-      resultImages: [],
+      productImageFiles: args.productImageFiles,
+      modelImageFiles: args.modelImageFiles || [],
+      resultImageFiles: [],
       prompt: args.prompt,
       parameters: args.parameters,
       tokensUsed: 0, // Will be set when generation completes
@@ -404,12 +474,12 @@ export const startGeneration = mutation({
   },
 });
 
-// Enhanced generation creation function with full image support and token validation
+// Enhanced generation creation function with file references (Convex v7)
 export const createEnhancedGeneration = mutation({
   args: {
     userId: v.id("users"),
-    productImages: v.array(v.string()), // Cloudinary URLs
-    modelImages: v.optional(v.array(v.string())), // Cloudinary URLs
+    productImageFiles: v.array(v.id("files")), // File references (required)
+    modelImageFiles: v.optional(v.array(v.id("files"))), // File references (optional)
     prompt: v.string(),
     parameters: v.object({
       model: v.string(),
@@ -434,18 +504,57 @@ export const createEnhancedGeneration = mutation({
       throw new Error("Insufficient token balance");
     }
 
+    // Validate product images are provided
+    if (!args.productImageFiles || args.productImageFiles.length === 0) {
+      throw new Error("At least one product image file is required");
+    }
+
+    // Validate file references
+    const productFiles = await Promise.all(
+      args.productImageFiles.map((fileId) => ctx.db.get(fileId))
+    );
+
+    for (const file of productFiles) {
+      if (!file) {
+        throw new Error("One or more product files not found");
+      }
+      if (file.userId !== args.userId) {
+        throw new Error(
+          "Unauthorized: Cannot use files that don't belong to you"
+        );
+      }
+    }
+
+    if (args.modelImageFiles && args.modelImageFiles.length > 0) {
+      const modelFiles = await Promise.all(
+        args.modelImageFiles.map((fileId) => ctx.db.get(fileId))
+      );
+
+      for (const file of modelFiles) {
+        if (!file) {
+          throw new Error("One or more model files not found");
+        }
+        if (file.userId !== args.userId) {
+          throw new Error(
+            "Unauthorized: Cannot use files that don't belong to you"
+          );
+        }
+      }
+    }
+
     // Deduct tokens from user balance (optimistic deduction)
     await ctx.db.patch(args.userId, {
       tokenBalance: user.tokenBalance - args.tokensUsed,
       totalTokensUsed: (user.totalTokensUsed || 0) + args.tokensUsed,
     });
 
-    // Create generation record
+    // Create generation record with file references
     const generationId = await ctx.db.insert("generations", {
       userId: args.userId,
       status: "pending",
-      productImages: args.productImages,
-      modelImages: args.modelImages,
+      productImageFiles: args.productImageFiles,
+      modelImageFiles: args.modelImageFiles || [],
+      resultImageFiles: [],
       prompt: args.prompt,
       parameters: args.parameters,
       tokensUsed: args.tokensUsed,
@@ -656,15 +765,15 @@ export const retryGeneration = mutation({
       throw new Error("Insufficient tokens for retry");
     }
 
-    // Create new generation with same parameters
+    // Create new generation with same parameters (using file references if available)
     const now = Date.now();
     const newGenerationId = await ctx.db.insert("generations", {
       userId: args.userId,
       status: "pending",
       createdAt: now,
-      productImages: originalGeneration.productImages,
-      modelImages: originalGeneration.modelImages,
-      resultImages: [],
+      productImageFiles: originalGeneration.productImageFiles,
+      modelImageFiles: originalGeneration.modelImageFiles,
+      resultImageFiles: [],
       prompt: originalGeneration.prompt,
       parameters: originalGeneration.parameters,
       tokensUsed: 0,
@@ -686,7 +795,7 @@ export const retryGeneration = mutation({
   },
 });
 
-// Helper function to get generation with image URLs (new approach using Cloudinary URLs)
+// Helper function to get generation with file URLs (updated for Convex v7 file references)
 export const getGenerationWithFiles = query({
   args: { generationId: v.id("generations") },
   handler: async (ctx, args) => {
@@ -695,24 +804,55 @@ export const getGenerationWithFiles = query({
       return null;
     }
 
-    // For the new approach, images are stored as Cloudinary URLs directly
-    // No need to fetch file records or storage URLs
+    // Get file URLs for file references
+    const getFileUrls = async (fileIds?: Array<string>) => {
+      if (!fileIds || fileIds.length === 0) return [];
+
+      const fileResults = [];
+      for (const fileId of fileIds) {
+        try {
+          const file = await ctx.db.get(fileId as Id<"files">);
+          if (file) {
+            // Type assertion to access file properties
+            const fileDoc = file as Doc<"files">;
+            const url = await ctx.storage.getUrl(fileDoc.storageId);
+            if (url) {
+              fileResults.push({
+                fileId: fileDoc._id,
+                url,
+                filename: fileDoc.filename,
+                contentType: fileDoc.contentType,
+                size: fileDoc.size,
+                metadata: fileDoc.metadata,
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to get file ${fileId}:`, error);
+        }
+      }
+
+      return fileResults;
+    };
+
+    // Get URLs for file references (primary approach)
+    const [productFilesWithUrls, modelFilesWithUrls, resultFilesWithUrls] =
+      await Promise.all([
+        getFileUrls(generation.productImageFiles),
+        getFileUrls(generation.modelImageFiles),
+        getFileUrls(generation.resultImageFiles),
+      ]);
+
     return {
       ...generation,
-      productImagesWithUrls: (generation.productImages || []).map((url) => ({
-        url,
-      })),
-      modelImagesWithUrls: (generation.modelImages || []).map((url) => ({
-        url,
-      })),
-      resultImagesWithUrls: (generation.resultImages || []).map((url) => ({
-        url,
-      })),
+      productFilesWithUrls,
+      modelFilesWithUrls,
+      resultFilesWithUrls,
     };
   },
 });
 
-// Helper function to get user generations with file details
+// Helper function to get user generations with file details (updated for Convex v7)
 export const getUserGenerationsWithFiles = query({
   args: {
     userId: v.id("users"),
@@ -746,29 +886,65 @@ export const getUserGenerationsWithFiles = query({
     const limit = args.limit || 20;
     const generations = await query.take(limit);
 
-    // For the new approach, images are stored as Cloudinary URLs directly
-    const generationsWithFiles = generations.map((generation) => ({
-      ...generation,
-      productImagesWithUrls: (generation.productImages || []).map((url) => ({
-        url,
-      })),
-      modelImagesWithUrls: (generation.modelImages || []).map((url) => ({
-        url,
-      })),
-      resultImagesWithUrls: (generation.resultImages || []).map((url) => ({
-        url,
-      })),
-    }));
+    // Helper function to get file URLs
+    const getFileUrls = async (fileIds?: Array<string>) => {
+      if (!fileIds || fileIds.length === 0) return [];
+
+      const fileResults = [];
+      for (const fileId of fileIds) {
+        try {
+          const file = await ctx.db.get(fileId as Id<"files">);
+          if (file) {
+            // Type assertion to access file properties
+            const fileDoc = file as Doc<"files">;
+            const url = await ctx.storage.getUrl(fileDoc.storageId);
+            if (url) {
+              fileResults.push({
+                fileId: fileDoc._id,
+                url,
+                filename: fileDoc.filename,
+                contentType: fileDoc.contentType,
+                size: fileDoc.size,
+                metadata: fileDoc.metadata,
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to get file ${fileId}:`, error);
+        }
+      }
+
+      return fileResults;
+    };
+
+    // Process each generation to include file URLs
+    const generationsWithFiles = await Promise.all(
+      generations.map(async (generation) => {
+        const [productFilesWithUrls, modelFilesWithUrls, resultFilesWithUrls] =
+          await Promise.all([
+            getFileUrls(generation.productImageFiles),
+            getFileUrls(generation.modelImageFiles),
+            getFileUrls(generation.resultImageFiles),
+          ]);
+
+        return {
+          ...generation,
+          productFilesWithUrls,
+          modelFilesWithUrls,
+          resultFilesWithUrls,
+        };
+      })
+    );
 
     return generationsWithFiles;
   },
 });
 
-// Helper function to add result images to a generation (using Cloudinary URLs)
-export const addResultImages = mutation({
+// Helper function to add result files to a generation (using file references)
+export const addResultFiles = mutation({
   args: {
     generationId: v.id("generations"),
-    resultImageUrls: v.array(v.string()), // Changed from file IDs to URLs
+    resultFileIds: v.array(v.id("files")),
   },
   handler: async (ctx, args) => {
     const generation = await ctx.db.get(args.generationId);
@@ -776,26 +952,37 @@ export const addResultImages = mutation({
       throw new Error("Generation not found");
     }
 
-    // Add new result images to the existing array
-    const updatedResultImages = [
-      ...(generation.resultImages || []),
-      ...args.resultImageUrls,
+    // Validate that all result files exist
+    const resultFiles = await Promise.all(
+      args.resultFileIds.map((fileId) => ctx.db.get(fileId))
+    );
+
+    for (const file of resultFiles) {
+      if (!file) {
+        throw new Error("One or more result files not found");
+      }
+    }
+
+    // Add new result files to the existing array
+    const updatedResultFiles = [
+      ...(generation.resultImageFiles || []),
+      ...args.resultFileIds,
     ];
 
     await ctx.db.patch(args.generationId, {
-      resultImages: updatedResultImages,
+      resultImageFiles: updatedResultFiles,
     });
 
-    return { success: true, totalResultImages: updatedResultImages.length };
+    return { success: true, totalResultFiles: updatedResultFiles.length };
   },
 });
 
-// Helper function to add image URL to generation (new approach)
-export const addImageUrlToGeneration = mutation({
+// Helper function to add file reference to generation (primary approach)
+export const addFileToGeneration = mutation({
   args: {
     generationId: v.id("generations"),
     userId: v.id("users"),
-    imageUrl: v.string(), // Cloudinary URL
+    fileId: v.id("files"),
     imageType: v.union(
       v.literal("product"),
       v.literal("model"),
@@ -812,32 +999,111 @@ export const addImageUrlToGeneration = mutation({
       throw new Error("Unauthorized: Cannot modify another user's generation");
     }
 
-    // Add URL to appropriate image array in generation
+    // Validate that the file exists and belongs to the user
+    const file = await ctx.db.get(args.fileId);
+    if (!file) {
+      throw new Error("File not found");
+    }
+
+    if (file.userId !== args.userId) {
+      throw new Error(
+        "Unauthorized: Cannot use files that don't belong to you"
+      );
+    }
+
+    // Add file ID to appropriate array in generation
     let updateField: string;
-    let currentImages: string[];
+    let currentFiles: Array<string>;
 
     switch (args.imageType) {
       case "product":
-        updateField = "productImages";
-        currentImages = generation.productImages || [];
+        updateField = "productImageFiles";
+        currentFiles = generation.productImageFiles || [];
         break;
       case "model":
-        updateField = "modelImages";
-        currentImages = generation.modelImages || [];
+        updateField = "modelImageFiles";
+        currentFiles = generation.modelImageFiles || [];
         break;
       case "result":
-        updateField = "resultImages";
-        currentImages = generation.resultImages || [];
+        updateField = "resultImageFiles";
+        currentFiles = generation.resultImageFiles || [];
         break;
       default:
         throw new Error("Invalid image type");
     }
 
-    const updatedImages = [...currentImages, args.imageUrl];
+    const updatedFiles = [...currentFiles, args.fileId];
     await ctx.db.patch(args.generationId, {
-      [updateField]: updatedImages,
+      [updateField]: updatedFiles,
     });
 
-    return { success: true, imageUrl: args.imageUrl };
+    return { success: true, fileId: args.fileId };
+  },
+});
+
+// Comprehensive generation query with file references
+export const getGenerationComplete = query({
+  args: { generationId: v.id("generations") },
+  handler: async (ctx, args) => {
+    const generation = await ctx.db.get(args.generationId);
+    if (!generation) {
+      return null;
+    }
+
+    // Helper function to get file data
+    const getFileData = async (fileId: string) => {
+      try {
+        const file = await ctx.db.get(fileId as Id<"files">);
+        if (!file) return null;
+
+        // Type assertion to access file properties
+        const fileDoc = file as Doc<"files">;
+        const url = await ctx.storage.getUrl(fileDoc.storageId);
+        return {
+          fileId: fileDoc._id,
+          url,
+          filename: fileDoc.filename,
+          contentType: fileDoc.contentType,
+          size: fileDoc.size,
+          uploadedAt: fileDoc.uploadedAt,
+          metadata: fileDoc.metadata,
+        };
+      } catch (error) {
+        console.error(`Failed to get file ${fileId}:`, error);
+        return null;
+      }
+    };
+
+    // Process file references
+    const productFiles = generation.productImageFiles
+      ? await Promise.all(generation.productImageFiles.map(getFileData))
+      : [];
+
+    const modelFiles = generation.modelImageFiles
+      ? await Promise.all(generation.modelImageFiles.map(getFileData))
+      : [];
+
+    const resultFiles = generation.resultImageFiles
+      ? await Promise.all(generation.resultImageFiles.map(getFileData))
+      : [];
+
+    // Filter out null results
+    const validProductFiles = productFiles.filter(Boolean);
+    const validModelFiles = modelFiles.filter(Boolean);
+    const validResultFiles = resultFiles.filter(Boolean);
+
+    return {
+      ...generation,
+      productFiles: validProductFiles,
+      modelFiles: validModelFiles,
+      resultFiles: validResultFiles,
+      hasFiles:
+        validProductFiles.length > 0 ||
+        validModelFiles.length > 0 ||
+        validResultFiles.length > 0,
+      totalProductImages: validProductFiles.length,
+      totalModelImages: validModelFiles.length,
+      totalResultImages: validResultFiles.length,
+    };
   },
 });

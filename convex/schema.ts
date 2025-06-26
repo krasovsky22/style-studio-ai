@@ -38,16 +38,7 @@ export default defineSchema({
     createdAt: v.number(),
     completedAt: v.optional(v.number()),
 
-    // Backward compatibility fields (single images)
-    productImageUrl: v.optional(v.string()),
-    modelImageUrl: v.optional(v.string()),
-
-    // Enhanced multiple image support
-    productImages: v.optional(v.array(v.string())), // Array of Cloudinary URLs
-    modelImages: v.optional(v.array(v.string())), // Array of Cloudinary URLs
-    resultImages: v.optional(v.array(v.string())), // Array of generated image URLs
-
-    // Legacy file ID arrays (for existing generations)
+    // File references (using Convex v7 file system)
     productImageFiles: v.optional(v.array(v.id("files"))),
     modelImageFiles: v.optional(v.array(v.id("files"))),
     resultImageFiles: v.optional(v.array(v.id("files"))),

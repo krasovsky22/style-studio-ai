@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 6: Process Generation with Service
-    const { resultImages } =
+    const { resultedImagedUrls } =
       await imageGenerationService.processExistingGeneration(
         generation._id,
         session.user.id as Id<"users">
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
         success: true,
         data: {
           generationId: generation._id,
-          resultImages,
+          resultedImagedUrls,
           status: "processing",
           message: "Generation processing started successfully",
         },

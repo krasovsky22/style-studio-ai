@@ -25,8 +25,11 @@ import {
   GenerationOptions,
   QualitySetting,
   StylePreset,
-  GenerationFormData,
 } from "@/types/generation";
+import { Id } from "@/convex/_generated/dataModel";
+
+// Local form data type that matches the component's actual data structure
+
 import { QUALITY_SETTINGS, STYLE_PRESETS } from "@/constants/prompts";
 import { AI_MODELS, DEFAULT_MODEL } from "@/constants/openai";
 import { cn } from "@/lib/utils";
@@ -62,10 +65,10 @@ export function GenerationForm({
     Record<string, string>
   >({});
 
-  const form = useForm<GenerationFormData>({
+  const form = useForm<GenerationOptions>({
     defaultValues: {
-      productImages: [],
-      modelImages: [],
+      productImageFiles: [],
+      modelImageFiles: [],
       customPrompt: "",
       style: "realistic",
       quality: "auto",
@@ -99,11 +102,11 @@ export function GenerationForm({
     const fieldErrors: Record<string, string> = {};
 
     if (
-      !watchedValues.productImages ||
-      watchedValues.productImages.length === 0
+      !watchedValues.productImageFiles ||
+      watchedValues.productImageFiles.length === 0
     ) {
       errors.push("At least one product image is required");
-      fieldErrors.productImages = "At least one product image is required";
+      fieldErrors.productImageFiles = "At least one product image is required";
     }
 
     if (watchedValues.customPrompt && watchedValues.customPrompt.length > 500) {
@@ -115,7 +118,7 @@ export function GenerationForm({
     return { valid: errors.length === 0, errors };
   };
 
-  const handleFormSubmit = async (data: GenerationFormData) => {
+  const handleFormSubmit = async (data: GenerationOptions) => {
     setFormErrors([]);
     setValidationErrors({});
 
@@ -132,9 +135,10 @@ export function GenerationForm({
     }
 
     try {
+      // File IDs are already in the correct format, no conversion needed
       await onSubmit({
-        productImages: data.productImages,
-        modelImages: data.modelImages,
+        productImageFiles: data.productImageFiles,
+        modelImageFiles: data.modelImageFiles,
         customPrompt: data.customPrompt,
         style: data.style,
         quality: data.quality,
@@ -168,10 +172,13 @@ export function GenerationForm({
 
   // Auto-navigate to tab with errors (simplified)
   const navigateToErrorTab = React.useCallback(() => {
-    if (validationErrors.productImages || validationErrors.modelImages) {
+    if (
+      validationErrors.productImageFiles ||
+      validationErrors.modelImageFiles
+    ) {
       setActiveTab("images");
     }
-  }, [validationErrors.productImages, validationErrors.modelImages]);
+  }, [validationErrors.productImageFiles, validationErrors.modelImageFiles]);
 
   // Navigate to error tab when validation fails
   React.useEffect(() => {
@@ -213,14 +220,15 @@ export function GenerationForm({
               <TabsTrigger
                 value="images"
                 className={
-                  validationErrors.productImages || validationErrors.modelImages
+                  validationErrors.productImageFiles ||
+                  validationErrors.modelImageFiles
                     ? "data-[state=inactive]:border-red-200 data-[state=inactive]:text-red-600"
                     : ""
                 }
               >
                 Images
-                {(validationErrors.productImages ||
-                  validationErrors.modelImages) && (
+                {(validationErrors.productImageFiles ||
+                  validationErrors.modelImageFiles) && (
                   <Icons.alertTriangle className="ml-1 h-3 w-3 text-red-500" />
                 )}
               </TabsTrigger>
@@ -233,13 +241,13 @@ export function GenerationForm({
               <Card>
                 <CardContent>
                   <MultiImageUpload
-                    value={watchedValues.productImages || []}
-                    onImagesChange={(urls: string[]) => {
-                      setValue("productImages", urls);
+                    value={watchedValues.productImageFiles || []}
+                    onImagesChange={(fileIds: Id<"files">[]) => {
+                      setValue("productImageFiles", fileIds);
                       // Clear validation errors when images are uploaded
                       setValidationErrors((prev) => ({
                         ...prev,
-                        productImages: "",
+                        productImageFiles: "",
                       }));
                     }}
                     accept={{ "image/*": [".jpg", ".jpeg", ".png", ".webp"] }}
@@ -262,13 +270,13 @@ export function GenerationForm({
               <Card>
                 <CardContent>
                   <MultiImageUpload
-                    value={watchedValues.modelImages || []}
-                    onImagesChange={(urls: string[]) => {
-                      setValue("modelImages", urls);
+                    value={watchedValues.modelImageFiles || []}
+                    onImagesChange={(fileIds: Id<"files">[]) => {
+                      setValue("modelImageFiles", fileIds);
                       // Clear validation errors when images are uploaded
                       setValidationErrors((prev) => ({
                         ...prev,
-                        modelImages: "",
+                        modelImageFiles: "",
                       }));
                     }}
                     accept={{ "image/*": [".jpg", ".jpeg", ".png", ".webp"] }}
@@ -328,7 +336,7 @@ export function GenerationForm({
                       setSelectedStyle(preset);
                       setValue(
                         "style",
-                        preset.id as GenerationFormData["style"]
+                        preset.id as GenerationOptions["style"]
                       );
                     }}
                   />
@@ -350,7 +358,7 @@ export function GenerationForm({
                       setSelectedQuality(setting);
                       setValue(
                         "quality",
-                        setting.id as GenerationFormData["quality"]
+                        setting.id as GenerationOptions["quality"]
                       );
                     }}
                   />

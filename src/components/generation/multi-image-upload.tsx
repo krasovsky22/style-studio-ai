@@ -9,17 +9,21 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileCategory } from "@/convex/types";
+import { Id } from "@/convex/_generated/dataModel";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 interface UploadedImage {
   id: string;
-  url: string;
+  fileId: Id<"files">; // Convex file ID
+  url: string; // Cloudinary URL for display
   publicId: string;
   file: File;
 }
 
 interface MultiImageUploadProps {
-  onImagesChange: (urls: string[]) => void;
-  value?: string[]; // Current image URLs from form state
+  onImagesChange: (fileIds: Id<"files">[]) => void;
+  value?: Id<"files">[]; // Current file IDs from form state
   accept?: Record<string, string[]>;
   maxSize?: number;
   maxImages?: number;
@@ -47,40 +51,50 @@ export function MultiImageUpload({
   const [uploading, setUploading] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const lastValueRef = useRef<string[]>([]);
+  const lastValueRef = useRef<Id<"files">[]>([]);
+
+  // Fetch file data for existing file IDs
+  const existingFiles = useQuery(
+    api.files.getFilesByIds,
+    value && value.length > 0 ? { ids: value } : "skip"
+  );
 
   // Sync internal state with form values when component mounts or values change
   useEffect(() => {
     const currentValue = value || [];
     const lastValue = lastValueRef.current;
 
-    // Only update if the URLs have actually changed
+    // Only update if the file IDs have actually changed
     if (
       JSON.stringify(currentValue.sort()) !== JSON.stringify(lastValue.sort())
     ) {
       lastValueRef.current = currentValue;
 
-      if (currentValue.length > 0) {
-        // Create UploadedImage objects from the form URLs
-        const imagesFromUrls: UploadedImage[] = currentValue.map(
-          (url, index) => ({
-            id: `existing-${index}-${url.split("/").pop()}`, // Create unique ID from URL
-            url,
-            publicId: url.split("/").pop()?.split(".")[0] || "", // Extract publicId from URL
-            file: new File([], url.split("/").pop() || `image-${index}.jpg`), // Create dummy file
-          })
-        );
+      if (currentValue.length > 0 && existingFiles) {
+        // Create UploadedImage objects from the fetched file data
+        const imagesFromFiles: UploadedImage[] = existingFiles
+          .filter((file) => file !== null) // Filter out null files
+          .map((file, index) => ({
+            id: `existing-${index}-${file._id}`,
+            fileId: file._id,
+            url: file.metadata?.originalUrl || "",
+            publicId:
+              file.metadata?.originalUrl?.split("/").pop()?.split(".")[0] || "",
+            file: new File([], file.filename || `image-${index}.jpg`),
+          }));
 
-        setUploadedImages(imagesFromUrls);
-      } else {
+        setUploadedImages(imagesFromFiles);
+      } else if (currentValue.length === 0) {
         // Clear uploaded images if form value is empty
         setUploadedImages([]);
       }
     }
-  }, [value]);
+  }, [value, existingFiles]);
 
   const uploadToServer = useCallback(
-    async (file: File): Promise<{ url: string; publicId: string }> => {
+    async (
+      file: File
+    ): Promise<{ fileId: Id<"files">; url: string; publicId: string }> => {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("category", category);
@@ -96,7 +110,7 @@ export function MultiImageUpload({
       }
 
       const data = await response.json();
-      return { url: data.url, publicId: data.publicId };
+      return { fileId: data.fileId, url: data.url, publicId: data.publicId };
     },
     [category]
   );
@@ -118,9 +132,10 @@ export function MultiImageUpload({
 
       try {
         const uploadPromises = filesToUpload.map(async (file) => {
-          const { url, publicId } = await uploadToServer(file);
+          const { fileId, url, publicId } = await uploadToServer(file);
           return {
             id: Math.random().toString(36).substr(2, 9),
+            fileId,
             url,
             publicId,
             file,
@@ -131,7 +146,7 @@ export function MultiImageUpload({
         const updatedImages = [...uploadedImages, ...newImages];
 
         setUploadedImages(updatedImages);
-        onImagesChange(updatedImages.map((img) => img.url));
+        onImagesChange(updatedImages.map((img) => img.fileId));
 
         toast.success(
           `${newImages.length} image${newImages.length > 1 ? "s" : ""} uploaded successfully`
@@ -175,10 +190,10 @@ export function MultiImageUpload({
   const removeImage = async (imageId: string) => {
     const imageToRemove = uploadedImages.find((img) => img.id === imageId);
 
-    if (imageToRemove?.publicId) {
+    if (imageToRemove?.fileId) {
       try {
         await fetch(
-          `/api/upload?publicId=${encodeURIComponent(imageToRemove.publicId)}`,
+          `/api/upload?fileId=${encodeURIComponent(imageToRemove.fileId)}`,
           {
             method: "DELETE",
           }
@@ -190,7 +205,7 @@ export function MultiImageUpload({
 
     const updatedImages = uploadedImages.filter((img) => img.id !== imageId);
     setUploadedImages(updatedImages);
-    onImagesChange(updatedImages.map((img) => img.url));
+    onImagesChange(updatedImages.map((img) => img.fileId));
     setError(null);
   };
 

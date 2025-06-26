@@ -1,10 +1,11 @@
 // Generation-specific types for AI integration
 
 import { AI_MODELS } from "@/constants/openai";
+import { Id } from "@/convex/_generated/dataModel";
 
 export interface GenerationOptions {
-  productImages: string[]; // Multiple product images
-  modelImages?: string[]; // Multiple model images (optional)
+  productImageFiles: Id<"files">[]; // Multiple product image file references
+  modelImageFiles?: Id<"files">[]; // Multiple model image file references (optional)
   style: "realistic" | "artistic" | "minimal";
   aspectRatio: "1:1" | "16:9" | "9:16" | "3:2" | "2:3";
   quality: "auto" | "high" | "medium" | "low";
@@ -59,8 +60,8 @@ export interface QualitySetting {
 
 // Generation form data
 export interface GenerationFormData {
-  productImages: string[];
-  modelImages?: string[];
+  productImageFiles: Id<"files">[];
+  modelImageFiles?: Id<"files">[];
   customPrompt?: string;
   style: GenerationOptions["style"];
   quality: GenerationOptions["quality"];

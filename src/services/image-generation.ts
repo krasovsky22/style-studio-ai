@@ -76,12 +76,22 @@ export class ImageGenerationService {
 
       console.log("Starting image generation with image analysis...", {
         generationId,
-        productImageCount: validatedData.productImages?.length || 0,
-        modelImageCount: validatedData.modelImages?.length || 0,
+        productImageCount: validatedData.productImageFiles?.length || 0,
+        modelImageCount: validatedData.modelImageFiles?.length || 0,
       });
+
+      // Convert file references to URLs for AI generation
+      const productImageUrls = await this.getUrlsFromFileReferences(
+        validatedData.productImageFiles
+      );
+      const modelImageUrls = validatedData.modelImageFiles
+        ? await this.getUrlsFromFileReferences(validatedData.modelImageFiles)
+        : [];
 
       const { success, images } = await generateImages({
         ...validatedData,
+        productImages: productImageUrls,
+        modelImages: modelImageUrls,
         prompt: optimizedPrompt,
       });
 
@@ -94,8 +104,8 @@ export class ImageGenerationService {
         );
       }
 
-      // STEP 10: Upload resulted images to Cloudinary and update generation record
-      const resultImageUrls: string[] = [];
+      // STEP 10: Upload result images to Cloudinary and create file references
+      const resultImageFileIds: Id<"files">[] = [];
 
       console.log("Uploading generated images to Cloudinary...", images);
       for (const image of images) {
@@ -106,26 +116,47 @@ export class ImageGenerationService {
             filename: `${userId}_${generationId}_${Date.now()}`,
             generationId,
           });
-        resultImageUrls.push(secure_url);
-        console.log("Generated image uploaded:", { public_id, secure_url });
+
+        // Create file reference in Convex
+        const fileId = await this.convex.mutation(api.files.storeFileMetadata, {
+          userId,
+          filename: `generated_${Date.now()}.png`,
+          contentType: "image/png",
+          size: 0, // We don't have the exact size, but it's not critical
+          category: "generated_image",
+          storageId: public_id, // Use Cloudinary public_id as storage ID
+          metadata: {
+            generationId,
+            originalUrl: secure_url,
+            isPrimary: resultImageFileIds.length === 0, // First image is primary
+            imageOrder: resultImageFileIds.length,
+          },
+        });
+
+        resultImageFileIds.push(fileId);
+        console.log("Generated image uploaded and file created:", {
+          public_id,
+          secure_url,
+          fileId,
+        });
       }
 
-      // Update generation record with result URLs and mark as completed
+      // Update generation record with result file IDs and mark as completed
       await this.convex.mutation(api.generations.updateGenerationStatus, {
         generationId,
         status: "completed",
-        resultImages: resultImageUrls,
+        resultImageFiles: resultImageFileIds,
       });
 
       console.log("Generation completed successfully:", {
         generationId,
-        imageCount: resultImageUrls.length,
+        imageCount: resultImageFileIds.length,
       });
 
       return {
         success: true,
         generationId,
-        resultImages: resultImageUrls,
+        resultImageFiles: resultImageFileIds,
       };
     } catch (error) {
       console.error("Error during image generation process:", error);
@@ -190,14 +221,22 @@ export class ImageGenerationService {
 
       console.log("Starting generation processing...", {
         generationId,
-        productImageCount: generation.productImages?.length || 0,
-        modelImageCount: generation.modelImages?.length || 0,
+        productImageCount: generation.productImageFiles?.length || 0,
+        modelImageCount: generation.modelImageFiles?.length || 0,
       });
 
-      // Reconstruct form data from generation record
-      const formData: GenerationFormData = {
-        productImages: generation.productImages || [],
-        modelImages: generation.modelImages || [],
+      // Convert file references to URLs for AI generation
+      const productImageUrls = await this.getUrlsFromFileReferences(
+        generation.productImageFiles || []
+      );
+      const modelImageUrls = generation.modelImageFiles
+        ? await this.getUrlsFromFileReferences(generation.modelImageFiles)
+        : [];
+
+      // Reconstruct form data from generation record for AI generation
+      const formDataForAI = {
+        productImages: productImageUrls,
+        modelImages: modelImageUrls,
         customPrompt: "", // Not stored separately, already in prompt
         style:
           (generation.parameters.style as GenerationFormData["style"]) ||
@@ -219,11 +258,11 @@ export class ImageGenerationService {
 
       // Generate images using the stored prompt
       const { success, images } = await generateImages({
-        ...formData,
+        ...formDataForAI,
         prompt: generation.prompt,
       });
 
-      // Update generation status to processing
+      // Update generation status to uploading
       await this.convex.mutation(api.generations.updateGenerationStatus, {
         generationId,
         status: "uploading",
@@ -238,8 +277,9 @@ export class ImageGenerationService {
         );
       }
 
-      // Upload resulted images to Cloudinary and update generation record
-      const resultImageUrls: string[] = [];
+      // Upload result images to Cloudinary and create file references
+      const resultImageFileIds: Id<"files">[] = [];
+      const resultedImagedUrls: string[] = [];
 
       for (const image of images) {
         // Upload using file management service
@@ -249,26 +289,49 @@ export class ImageGenerationService {
             filename: `${userId}_${generationId}_${Date.now()}`,
             generationId,
           });
-        resultImageUrls.push(secure_url);
-        console.log("Generated image uploaded:", { public_id, secure_url });
+
+        // Create file reference in Convex
+        const fileId = await this.convex.mutation(api.files.storeFileMetadata, {
+          userId,
+          filename: `generated_${Date.now()}.png`,
+          contentType: "image/png",
+          size: 0, // We don't have the exact size, but it's not critical
+          category: "generated_image",
+          storageId: public_id, // Use Cloudinary public_id as storage ID
+          metadata: {
+            generationId,
+            originalUrl: secure_url,
+            isPrimary: resultImageFileIds.length === 0, // First image is primary
+            imageOrder: resultImageFileIds.length,
+          },
+        });
+
+        resultImageFileIds.push(fileId);
+        resultedImagedUrls.push(secure_url);
+        console.log("Generated image uploaded and file created:", {
+          public_id,
+          secure_url,
+          fileId,
+        });
       }
 
-      // Update generation record with result URLs and mark as completed
+      // Update generation record with result file IDs and mark as completed
       await this.convex.mutation(api.generations.updateGenerationStatus, {
         generationId,
         status: "completed",
-        resultImages: resultImageUrls,
+        resultImageFiles: resultImageFileIds,
       });
 
       console.log("Generation completed successfully:", {
         generationId,
-        imageCount: resultImageUrls.length,
+        imageCount: resultImageFileIds.length,
       });
 
       return {
         success: true,
         generationId,
-        resultImages: resultImageUrls,
+        resultImageFiles: resultImageFileIds,
+        resultedImagedUrls,
       };
     } catch (error) {
       console.error("Error during existing generation processing:", error);
@@ -292,32 +355,50 @@ export class ImageGenerationService {
     }
   }
 
+  /**
+   * Get URLs from file references for AI generation
+   */
+  private async getUrlsFromFileReferences(
+    fileIds: Id<"files">[]
+  ): Promise<string[]> {
+    const urls: string[] = [];
+
+    for (const fileId of fileIds) {
+      const file = await this.convex.query(api.files.getFile, { fileId });
+      if (file && file.metadata?.originalUrl) {
+        urls.push(file.metadata.originalUrl as string);
+      }
+    }
+
+    return urls;
+  }
+
   // Prompt Generation
   private async generatePrompt(data: GenerationFormData): Promise<string> {
-    const { style, quality, productImages, modelImages } = data;
+    const { style, quality, productImageFiles, modelImageFiles } = data;
 
     // Base prompt components
     let prompt = "";
 
     // If we have both product and model images, create a specific outfit visualization prompt
     if (
-      productImages &&
-      productImages.length > 0 &&
-      modelImages &&
-      modelImages.length > 0
+      productImageFiles &&
+      productImageFiles.length > 0 &&
+      modelImageFiles &&
+      modelImageFiles.length > 0
     ) {
       prompt = `Generate an image showing the specific outfit/clothing from the provided product images being worn by the person from the model images. `;
       prompt += `Style: ${STYLE_VARIATIONS[style].modifiers}, ${STYLE_VARIATIONS[style].setting}. `;
       prompt += `Ensure the clothing fits naturally on the model while maintaining the original design and details of the outfit. `;
     }
     // If we only have product images, describe them being worn by a generic model
-    else if (productImages && productImages.length > 0) {
+    else if (productImageFiles && productImageFiles.length > 0) {
       prompt = `Generate an image of the specific outfit/clothing from the provided product images being worn by a ${MODEL_DESCRIPTIONS[style]}. `;
       prompt += `${STYLE_VARIATIONS[style].modifiers}, ${STYLE_VARIATIONS[style].setting}. `;
       prompt += `Show the clothing naturally worn while maintaining all original design details and colors. `;
     }
     // If we only have model images, create a fashion shoot with stylish clothing
-    else if (modelImages && modelImages.length > 0) {
+    else if (modelImageFiles && modelImageFiles.length > 0) {
       prompt = `Create a fashion photograph of the person from the model images wearing stylish, fashionable clothing. `;
       prompt += `${STYLE_VARIATIONS[style].modifiers}, ${STYLE_VARIATIONS[style].setting}. `;
       prompt += `The outfit should complement the person's style and the overall aesthetic. `;
@@ -357,14 +438,14 @@ export class ImageGenerationService {
     prompt: string,
     tokenCost: number
   ) {
-    // Create generation record with all images stored
+    // Create generation record with file references
     return await this.convex.mutation(
       api.generations.createEnhancedGeneration,
       {
         userId,
-        // New arrays for multiple images
-        productImages: data.productImages,
-        modelImages: data.modelImages || [],
+        // Use file reference arrays instead of URL arrays
+        productImageFiles: data.productImageFiles,
+        modelImageFiles: data.modelImageFiles || [],
         prompt,
         parameters: {
           model: data.model,

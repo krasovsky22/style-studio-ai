@@ -61,6 +61,18 @@ export const getFile = query({
   },
 });
 
+// Get file by ID
+export const getFilesByIds = query({
+  args: { ids: v.array(v.id("files")) },
+  handler: async (ctx, args) => {
+    return Promise.all(
+      args.ids.map(async (id) => {
+        return await ctx.db.get(id);
+      })
+    );
+  },
+});
+
 // Get file by storage ID
 export const getFileByStorageId = query({
   args: { storageId: v.string() },
@@ -116,9 +128,6 @@ export const deleteFile = mutation({
 
     // Delete the file record
     await ctx.db.delete(args.fileId);
-
-    // Note: The actual file in Convex storage should be deleted separately
-    // using ctx.storage.delete(file.storageId) in the calling code
 
     return { storageId: file.storageId };
   },
@@ -372,10 +381,10 @@ export const getGenerationImagesOrdered = query({
     return {
       generation,
       images: {
-        // Return URLs from generation record (faster access)
-        productImageUrls: generation.productImages || [],
-        modelImageUrls: generation.modelImages || [],
-        resultImageUrls: generation.resultImages || [],
+        // Return file ID arrays (Convex v7 approach)
+        productImageFileIds: generation.productImageFiles || [],
+        modelImageFileIds: generation.modelImageFiles || [],
+        resultImageFileIds: generation.resultImageFiles || [],
         // Return detailed file information
         productImageFiles,
         modelImageFiles,
@@ -391,5 +400,74 @@ export const getGenerationImagesOrdered = query({
         primaryModelImage: modelImageFiles.find((f) => f.metadata?.isPrimary),
       },
     };
+  },
+});
+
+// Store file metadata for generation (enhanced version)
+export const storeGenerationFileMetadata = mutation({
+  args: {
+    userId: v.id("users"),
+    generationId: v.id("generations"),
+    filename: v.string(),
+    contentType: v.string(),
+    size: v.number(),
+    storageId: v.string(),
+    category: v.union(
+      v.literal("product_image"),
+      v.literal("model_image"),
+      v.literal("generated_image")
+    ),
+    imageOrder: v.optional(v.number()),
+    isPrimary: v.optional(v.boolean()),
+    metadata: v.optional(
+      v.object({
+        width: v.optional(v.number()),
+        height: v.optional(v.number()),
+        format: v.optional(v.string()),
+        originalUrl: v.optional(v.string()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    // Verify the generation exists and belongs to the user
+    const generation = await ctx.db.get(args.generationId);
+    if (!generation) {
+      throw new Error("Generation not found");
+    }
+
+    if (generation.userId !== args.userId) {
+      throw new Error(
+        "Unauthorized: Cannot add files to another user's generation"
+      );
+    }
+
+    const fileId = await ctx.db.insert("files", {
+      userId: args.userId,
+      filename: args.filename,
+      contentType: args.contentType,
+      size: args.size,
+      storageId: args.storageId,
+      category: args.category,
+      uploadedAt: Date.now(),
+      metadata: {
+        ...args.metadata,
+        generationId: args.generationId,
+        isPrimary: args.isPrimary,
+        imageOrder: args.imageOrder,
+      },
+    });
+
+    // Log file upload
+    await ctx.db.insert("usage", {
+      userId: args.userId,
+      action: "image_uploaded",
+      timestamp: Date.now(),
+      metadata: {
+        generationId: args.generationId,
+        imageSize: `${args.size} bytes`,
+      },
+    });
+
+    return fileId;
   },
 });

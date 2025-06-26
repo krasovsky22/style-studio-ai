@@ -36,12 +36,12 @@ export const imageUploadSchema = z.object({
 
 // Generation schemas
 export const generationSchema = z.object({
-  productImages: z
-    .array(z.string().url("Invalid product image URL"))
+  productImageFiles: z
+    .array(z.string())
     .min(1, "At least one product image is required")
     .max(5, "Maximum 5 product images allowed"),
-  modelImages: z
-    .array(z.string().url("Invalid model image URL"))
+  modelImageFiles: z
+    .array(z.string())
     .max(3, "Maximum 3 model images allowed")
     .optional(),
   customPrompt: z
