@@ -58,14 +58,6 @@ export const getUserById = query({
   },
 });
 
-// Get user by ID (alias for backward compatibility)
-export const getUser = query({
-  args: { userId: v.id("users") },
-  handler: async (ctx, args) => {
-    return await ctx.db.get(args.userId);
-  },
-});
-
 // Get user by email
 export const getUserByEmail = query({
   args: { email: v.string() },
@@ -73,17 +65,6 @@ export const getUserByEmail = query({
     return await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
-      .first();
-  },
-});
-
-// Get user by external ID (for OAuth)
-export const getUserByExternalId = query({
-  args: { externalId: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("users")
-      .withIndex("by_external_id", (q) => q.eq("externalId", args.externalId))
       .first();
   },
 });
@@ -105,27 +86,6 @@ export const updateUser = mutation({
 
     const updatedUser = await ctx.db.get(userId);
     return updatedUser;
-  },
-});
-
-// Update last login time
-export const updateLastLogin = mutation({
-  args: { userId: v.id("users") },
-  handler: async (ctx, args) => {
-    const now = Date.now();
-
-    await ctx.db.patch(args.userId, {
-      lastLoginAt: now,
-    });
-
-    // Log login
-    await ctx.db.insert("usage", {
-      userId: args.userId,
-      action: "login",
-      timestamp: now,
-    });
-
-    return true;
   },
 });
 

@@ -119,66 +119,6 @@ export const getUserTokenPurchases = query({
   },
 });
 
-// Get token purchase by transaction ID
-export const getTokenPurchaseByTransactionId = query({
-  args: { transactionId: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("tokenPurchases")
-      .withIndex("by_transaction_id", (q) =>
-        q.eq("transactionId", args.transactionId)
-      )
-      .first();
-  },
-});
-
-// Get token purchase by Stripe payment intent ID
-export const getTokenPurchaseByStripeId = query({
-  args: { stripePaymentIntentId: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("tokenPurchases")
-      .withIndex("by_stripe_payment_intent", (q) =>
-        q.eq("stripePaymentIntentId", args.stripePaymentIntentId)
-      )
-      .first();
-  },
-});
-
-// Get user's token balance and stats
-export const getUserTokenStats = query({
-  args: { userId: v.id("users") },
-  handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    // Get recent token purchases
-    const recentPurchases = await ctx.db
-      .query("tokenPurchases")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .order("desc")
-      .take(5);
-
-    // Get recent generations to show token usage
-    const recentGenerations = await ctx.db
-      .query("generations")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .order("desc")
-      .take(10);
-
-    return {
-      tokenBalance: user.tokenBalance,
-      totalTokensPurchased: user.totalTokensPurchased,
-      totalTokensUsed: user.totalTokensUsed,
-      freeTokensGranted: user.freeTokensGranted,
-      recentPurchases,
-      recentGenerations,
-    };
-  },
-});
-
 // Deduct tokens from user balance (atomic operation)
 export const deductTokens = mutation({
   args: {

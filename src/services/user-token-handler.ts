@@ -68,7 +68,7 @@ export class UserTokenHandler {
   ): Promise<TokenValidationResult> {
     try {
       // Get user from Convex
-      const user = await this.convex.query(api.users.getUser, {
+      const user = await this.convex.query(api.users.getUserById, {
         userId,
       });
 
@@ -225,7 +225,7 @@ export class UserTokenHandler {
    */
   async getUserTokenBalance(userId: string): Promise<number> {
     try {
-      const user = await this.convex.query(api.users.getUser, {
+      const user = await this.convex.query(api.users.getUserById, {
         userId: userId as Id<"users">,
       });
 
@@ -259,7 +259,7 @@ export class UserTokenHandler {
    */
   async getUserTokenStats(userId: string) {
     try {
-      const user = await this.convex.query(api.users.getUser, {
+      const user = await this.convex.query(api.users.getUserById, {
         userId: userId as Id<"users">,
       });
 
